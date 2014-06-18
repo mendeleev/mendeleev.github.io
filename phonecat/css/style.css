@@ -1,0 +1,24 @@
+a.thumb img {
+    width: 10em;
+    display:inline-block;
+}
+
+ul.phone-thumbs {
+    list-style:none;
+    overflow:hidden;
+}
+
+ul.phone-thumbs li{
+    float:left;
+    cursor:pointer;
+}
+
+ul.phone-thumbs img {
+    width:5em;
+    display:inline-block;
+    border:1px solid transparent;
+}
+
+ul.phone-thumbs img:hover {
+    border:1px solid #ccc;
+}
