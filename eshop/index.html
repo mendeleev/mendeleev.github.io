@@ -1,0 +1,111 @@
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Simple shopping cart prototype</title>
+    <link rel="stylesheet" href="src/css/style.css" />
+</head>
+
+<body>
+
+<script id="cartItemTemplate" type="text/basis-template">
+    <li class="item">{title}
+        <div class="number">
+            <input type="text" class="amount" value="{count}" data-id="{id}" />
+            <div>
+                <button class="up"></button>
+                <button class="down"></button>
+            </div>
+        </div> $ {price}
+    </li>
+</script>
+
+<div class="container">
+    <aside class="cart">
+        <div id="shoppingCart">
+            <div class="cartHeadline">
+                <div class="itemsInCart">
+                    <div class="amount">
+                        <span class="count">2</span>
+                    </div>
+                </div>
+                <h4>Shopping Cart</h4>                
+            </div>
+            <ul class="cartItems">
+            </ul>
+
+            <div class="total">$ <span>0</span></div>
+
+        </div>
+    </aside>
+
+    <script id="categoryTemplate" type="text/basis-template">
+        <li><a href="#" data-id="{id}">{title}</a></li>
+    </script>
+
+    <div class="content">
+        <div class="filters">
+            <form action="#" method="get">
+                <div class="filter" id="categories">
+                    <span class="label">Please choose your category:</span>
+                    <input type="hidden" name="category_id" />
+                    <nav class="categories">
+                        <ul></ul>
+                    </nav>
+                </div>
+
+                <div class="filter">
+                    <span class="label">Sort by:</span>
+                    <select name="sort_by" id="sortBy">
+                        <option value="0">none</option>
+                        <option value="1">price asc</option>
+                        <option value="2">price desc</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <div id="products"></div>
+
+        <script id="thumbnailTemplate" type="text/basis-template">
+            <li>
+                <img width="50px" src="images/{gallery_id}/{photo}" alt=""/>
+            </li>
+        </script>
+
+        <script id="productTemplate" type="text/basis-template">
+            <figure class="item" data-id="{id}">
+                <img width="100%" class="mainPhoto" src="{mainPhoto}" alt="" />
+                <ul class="gallery"></ul>
+
+                <div class="description">
+                    <h3><a href="#">{title}</a></h3>
+                    <p>{description}</p>
+                </div>
+
+                <div class="buyBlock">
+                    <div class="number">
+                        <input type="text" class="amount" value="1" />
+                        <div>
+                            <button class="up"></button>
+                            <button class="down"></button>
+                        </div>
+                    </div>
+                    <div class="addToCart">
+                        <span class="price">$ {price}</span>
+                        <button class="buy"></button>
+                    </div>
+                </div>
+
+
+            </figure>
+        </script>
+    </div>
+</div>
+
+<script data-main="src/app/main" src="lib/requirejs/require.js"></script>
+</body>
+
+</html>
