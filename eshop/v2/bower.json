@@ -1,0 +1,21 @@
+{
+  "name": "eShop",
+  "version": "0.0.0",
+  "homepage": "https://github.com/mendeleev/frontend-test-data",
+  "authors": [
+    "priadko <mendeleev.ua@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "flight": "~1.5.0",
+    "requirejs": "~2.1.17",
+    "basis-templates": "~1.3.3"
+  }
+}
