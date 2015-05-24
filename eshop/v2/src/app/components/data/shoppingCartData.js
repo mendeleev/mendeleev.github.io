@@ -12,13 +12,18 @@ define(
     return defineComponent(CartData);
 
     function CartData() {
+      this.defaultAttrs({
+        data: "",
+        storageName: "shoppingCart"
+      });
 
       this.getData = function() {
-        return JSON.parse(localStorage.getItem('shoppingCart') || '{}');
+        this.attr.data = localStorage.getItem(this.attr.storageName);
+        return JSON.parse(this.attr.data || '{}');
       };
 
       this.save = function(data) {
-        localStorage.setItem('shoppingCart', JSON.stringify(data));
+        localStorage.setItem(this.attr.storageName, JSON.stringify(data));
       };
 
       this.addItem = function(item) {
@@ -56,6 +61,13 @@ define(
         this.save(data);
       };
 
+      this.watch = function() {
+        var data = localStorage.getItem(this.attr.storageName);
+        if(data !== this.attr.data) {
+          this.trigger('cartDataChanged', this.getData());
+        }
+      };
+
       this.after('initialize', function() {
         this.on('addItem', function(e, data) {
           if(data.count > 0) {
@@ -73,6 +85,11 @@ define(
           this.changeItem(data.id, data.count);
           this.trigger('cartDataChanged', this.getData());
         });
+
+        /*watch cart for changes on other tab*/
+        setInterval(function() {
+          this.watch();
+        }.bind(this), 2000);
 
         this.trigger('cartDataChanged', this.getData());
       });

@@ -1,0 +1,86 @@
+.imageView {
+  position: fixed;
+  z-index: 2;
+  top:0;
+  width:100%;
+  height: 100%;
+  padding-top:50px;
+  background: rgba(0,0,0,0.85);
+
+  .imageContainer {
+    position: relative;
+    width:800px;
+    margin:0 auto;
+    background: #fff;
+
+    .image {
+      position: relative;
+      width:100%;
+      height:600px;
+      text-align: center;
+      overflow: hidden;
+
+      .prev, .next {
+        display: block;
+        position: absolute;
+        z-index: 3;
+        width:35px;
+        height:80px;
+        background: rgba(0,0,0,0.5);
+        top:50%;
+        margin-top:-40px;
+
+        &:hover {
+          opacity: 0.5;
+          animation: hover 1s;
+
+          @keyframes hover {
+            0%   { opacity: 1; }
+            100% { opacity: 0.5; }
+          }
+        }
+      }
+
+      .prev {
+        left:0;
+
+        &:before {
+          content: "";
+          display: block;
+          position: absolute;
+          top:50%;
+          left:-15px;
+          margin-top:-20px;
+          border:20px solid transparent;
+          border-right: 20px solid $white;
+        }
+      }
+
+      .next {
+        right:0;
+
+        &:before {
+          content: "";
+          display: block;
+          position: absolute;
+          top:50%;
+          right:-15px;
+          margin-top:-20px;
+          border:20px solid transparent;
+          border-left: 20px solid $white;
+        }
+      }
+
+      img {
+        height: 100%;
+        margin:0 auto;
+      }
+    }
+
+    .icon-delete {
+      position: absolute;
+      top: 0; right:-16px;
+      z-index: 4;
+    }
+  }
+}

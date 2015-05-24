@@ -1,6 +1,10 @@
 {
   "categories": [
     {
+      "id": "",
+      "title": "All"
+    },
+    {
       "id": "2da2a08dc115493a8eb450197bdb7b9a",
       "title": "Electronics"
     },
