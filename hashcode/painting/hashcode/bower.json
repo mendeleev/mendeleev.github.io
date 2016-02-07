@@ -1,0 +1,23 @@
+{
+  "name": "hashcode",
+  "description": "Google hash code application",
+  "main": "index.js",
+  "authors": [
+    "Andrii Priadko"
+  ],
+  "license": "MIT",
+  "moduleType": [],
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.2.0",
+    "requirejs": "~2.1.22",
+    "underscore": "~1.8.3"
+  }
+}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Google Hash Code Painting Task Checker</title>
+	<link rel="stylesheet" type="text/css" href="application/css/style.css" />
+</head>
+<body>
+
+<header>
+	<form>
+		<label>
+			Scale
+			<select name="tile" id="tile">
+				<option value="1">1x</option>
+				<option value="2" selected>2x</option>
+				<option value="4">4x</option>
+				<option value="8">8x</option>
+				<option value="12">12x</option>
+				<option value="16">16x</option>
+			</select>
+		</label>
+		<label>
+			Gap
+			<select name="gap" id="gap">
+				<option value="0">0</option>
+				<option value="1">1</option>
+				<option value="2">2</option>
+			</select>
+		</label>
+		<label>
+			Picture
+			<select name="file" id="file">
+				<option value="logo.in">logo.in</option>
+				<option value="learn_and_teach.in">learn_and_teach.in</option>
+				<option value="right_angle.in">right_angle.in</option>
+			</select>
+		</label>
+		<label>
+			Color
+			<input type="color" name="color" id="color" value="#0099CC" />
+		</label>
+		<label class="hide">
+			Solution
+			<input type="file" name="instructions" id="instructions" />	
+		</label>
+	</form>	
+</header>
+
+<div class="container">
+	<canvas width="0" height="0" id="canvas"></canvas>	
+</div>
+
+<script type="text/javascript" src="application/libs/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript" src="application/src/app.js"></script>
+</body>
+</html>

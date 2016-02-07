@@ -1,0 +1,26 @@
+{
+  "name": "painting",
+  "homepage": "https://github.com/mendeleev/mendeleev.github.io",
+  "authors": [
+    "Andrii <mendeleev.ua@gmail.com>"
+  ],
+  "description": "Google Hash Code task checker application",
+  "main": "index.html",
+  "moduleType": [],
+  "keywords": [
+    "hashcode",
+    "google"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.2.0",
+    "requirejs": "~2.1.22"
+  }
+}
