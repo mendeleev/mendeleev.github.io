@@ -1,0 +1,1 @@
+define("modules/partials/gallery",[],function(){return console.log("gallery"),{message:"hello world"}});

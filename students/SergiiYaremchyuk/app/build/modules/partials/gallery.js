@@ -1,0 +1,1 @@
+define("modules/partials/gallery",["modules/partials/minion"],function(n){return{appendMinions:function(e){for(var i=0;i<e.length;i++){var a=n.getMinionHTML(e[i]);$("ul.gallery").append(a)}}}});

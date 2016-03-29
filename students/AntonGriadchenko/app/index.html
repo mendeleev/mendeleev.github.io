@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Minions clicker</title>
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+
+
+    <body>
+
+        <header>
+            <h1>Minions clicker</h1>
+            <span class="right clearCounters">Clear counters</span>
+        </header>
+
+        <div class="searching">
+            <input type="text" class="search" id="search" placeholder="input minion nick here..."/>
+        </div>
+
+        <div class="sorting">
+            <select class="sort" id="sort">
+                <option value="id">By id</option>
+                <option value="counter">By popularity</option>
+                <option value="nick">By nick</option>
+            </select>
+
+            <input type="radio" name="order" value="ACS" checked><label> ASC</label>
+            <input type="radio" name="order" value="DESC"><label> DESC</label>
+        </div>
+
+        <ul class="gallery">
+        </ul>
+
+        <footer>
+            minions clicker &copy; - 2016 <span class="right">RIA.com</span>
+        </footer>
+
+        <script data-main="build/app.js" src="build/lib/requirejs/require.js" async></script>
+        <!--<script data-main="js/app.js" src="js/lib/requirejs/require.js" async></script>-->
+    </body>
+</html>

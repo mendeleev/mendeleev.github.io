@@ -1,0 +1,1 @@
+define("modules/partials/gallery",[],function(){return console.log("gallery"),{message:"hello world"}}),define("modules/partials/minion",[],function(){return console.log("this is a file with minion functionality"),{message:"minion"}}),define("modules/main",["modules/partials/gallery","modules/partials/minion","jquery"],function(e,i,l){console.log("main.js")});

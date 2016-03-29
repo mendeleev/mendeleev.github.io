@@ -1,0 +1,25 @@
+/* Hide click text to animate it after */
+.gallery .item span {
+    opacity: 0;
+}
+
+/* Reset button style */
+h1 .reset {
+    float: right;
+    color: #FBD65A;
+}
+
+h1 .reset:hover {
+    color: #D95D27;
+}
+
+/* Minions flipping */
+/* According to this https://css-tricks.com/snippets/css/flip-an-image/ */
+.gallery .item img:active {
+    -moz-transform: scaleX(-1);
+    -o-transform: scaleX(-1);
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+    filter: FlipH;
+    -ms-filter: "FlipH";
+}

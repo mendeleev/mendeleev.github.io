@@ -1,0 +1,6 @@
+
+modules/main.js
+----------------
+modules/partials/minion.js
+modules/partials/gallery.js
+modules/main.js
