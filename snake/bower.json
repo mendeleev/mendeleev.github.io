@@ -1,0 +1,27 @@
+{
+  "name": "Snake HTML5 game",
+  "authors": [
+    "mendeleev <mendeleev.ua@gmail.com>"
+  ],
+  "description": "simple snake game built with javascript and html5 canvas",
+  "main": "index.html",
+  "keywords": [
+    "snake",
+    "html5",
+    "javascript",
+    "game",
+    "canvas"
+  ],
+  "license": "MIT",
+  "homepage": "http://mendeleev.github.io/snake/",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "requirejs": "^2.2.0"
+  }
+}
