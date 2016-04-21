@@ -6,10 +6,10 @@
     "modules/objects/menu"
   ],
   function(snake, food, menu) {
-    var _TILE_SIZE = 24,
-      _COLS = 30,
-      _ROWS = 25,
-      _APPLES = 5,
+    var _TILE_SIZE = 20,
+      _COLS = 50,
+      _ROWS = 30,
+      _APPLES = 15,
       /*keys*/
       _ENTER = 13,
       container, canvas, ctx;

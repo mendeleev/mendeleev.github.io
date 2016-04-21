@@ -16,11 +16,31 @@
         return _ID;
       },
 
-      printItem: function(ctx, coords) {
-        var img = new Image();
-        img.src = 'images/apple.png';
+      getImage: function() {
+        var images = [
+              {
+                img: new Image(),
+                path: 'images/apple.png',
+                pts: 1
+              },
+              {
+                img: new Image(),
+                path: 'images/strawberry.png',
+                pts: 2
+              },
+              {
+                img: new Image(),
+                path: 'images/mushroom.png',
+                pts: -1
+              }
+            ],
+            obj = images[Math.floor(Math.random()*images.length)];
+        obj.img.src = obj.path;
+        return obj;
+      },
 
-        ctx.drawImage(img,coords.x*this.tileSize, coords.y*this.tileSize, this.tileSize, this.tileSize);
+      printItem: function(ctx, obj) {
+        ctx.drawImage(obj.img, obj.x*this.tileSize, obj.y*this.tileSize, this.tileSize, this.tileSize);
       },
 
       generateFood: function(cols, rows, num) {
@@ -30,10 +50,13 @@
       },
 
       getFood: function(cols, rows) {
+        var obj = this.getImage();
         return {
           x: Math.floor(Math.random()*cols-1)+1,
           y: Math.floor(Math.random()*rows-1)+1,
-          id: _ID
+          id: _ID,
+          img: obj.img,
+          pts: obj.pts
         }
       },
 

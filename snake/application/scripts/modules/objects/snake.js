@@ -126,7 +126,7 @@
         elements.push(tail);
       },
 
-      increase: function() {
+      increase: function(pts) {
         var tail = this.getElement(elements[0].x, elements[0].y);
         switch(direction) {
           case _UP:
@@ -144,7 +144,8 @@
         }
 
         elements.unshift(tail);
-        this.pts += 1;
+
+        this.pts += pts;
       },
 
       /**
@@ -183,7 +184,7 @@
       collisionWith: function(obj, apples) {
         switch (obj.id) {
           case _APPLE:
-            this.increase();
+            this.increase(obj.pts || 1);
             break;
           default:
             console.log("collision with unknown object");

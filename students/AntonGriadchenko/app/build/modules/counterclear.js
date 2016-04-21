@@ -1,1 +1,0 @@
-define(["jquery"],function(){console.log("counterclear");var e=$(".gallery");$(".clearCounters").click(function(){localStorage.removeItem("minionsCounter"),e.find(".counter").html("0")})});
