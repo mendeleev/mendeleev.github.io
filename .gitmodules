@@ -7,3 +7,6 @@
 [submodule "mockup"]
 	path = mockup
 	url = https://github.com/mendeleev/mockup.git
+[submodule "catClicker"]
+	path = catClicker
+	url = https://github.com/mendeleev/catClicker.git
