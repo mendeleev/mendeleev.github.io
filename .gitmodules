@@ -1,3 +1,6 @@
 [submodule "snake"]
 	path = snake
 	url = https://github.com/mendeleev/snake.git
+[submodule "minions"]
+	path = minions
+	url = https://github.com/mendeleev/require-js-learning.git
