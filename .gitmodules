@@ -4,3 +4,6 @@
 [submodule "minions"]
 	path = minions
 	url = https://github.com/mendeleev/require-js-learning.git
+[submodule "mockup"]
+	path = mockup
+	url = https://github.com/mendeleev/mockup.git
