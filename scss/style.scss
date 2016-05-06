@@ -1,0 +1,48 @@
+$width: 1200px;
+
+header {
+  max-width: $width;
+  margin: auto;
+  margin-top: 40px;
+  margin-bottom: 30px;
+  text-align: center;
+
+  h2 {
+    font-family: 'Merienda One', cursive;
+    font-size: 28pt;
+  }
+
+  h3 {
+    font-size: 14pt;
+    margin-top: -10px;
+  }
+}
+
+.container {
+  max-width: $width;
+}
+
+ul {
+  list-style: none;
+}
+
+.skills {
+  overflow: hidden;
+
+  li {
+    float: left;
+    margin: 0 5px 5px 0;
+  }
+}
+
+.employment-history {
+  .skills {
+    margin:0;
+    padding:0;
+  }
+}
+
+footer {
+  margin:20px 0;
+  padding: 0 20px;
+}

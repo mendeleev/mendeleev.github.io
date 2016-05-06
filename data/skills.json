@@ -1,0 +1,56 @@
+[
+  {
+    "name": "HTML",
+    "style": "success"
+  },
+  {
+    "name":"CSS",
+    "style": "success"
+  },
+  {
+    "name":"JavaScript",
+    "style":"success"
+  },
+  {
+    "name":"AngularJS"
+  },
+  {
+    "name":"Gulp"
+  },
+  {
+    "name":"Sass"
+  },
+  {
+    "name":"NodeJS"
+  },
+  {
+    "name":"RequireJS"
+  },
+  {
+    "name":"JQuery"
+  },
+  {
+    "name":"Linux"
+  },
+  {
+    "name":"Git"
+  },
+  {
+    "name":"Mercurial"
+  },
+  {
+    "name":"Bower"
+  },
+  {
+    "name":"Flight JS"
+  },
+  {
+    "name":"MySQL"
+  },
+  {
+    "name":"ElasticSearch"
+  },
+  {
+    "name":"MongoDB"
+  }
+]

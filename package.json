@@ -1,0 +1,29 @@
+{
+  "name": "mendeleev.github.io",
+  "version": "1.0.0",
+  "description": "Andrii Priadko interactive CV",
+  "main": "gulpfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mendeleev/mendeleev.github.io.git"
+  },
+  "keywords": [
+    "CV",
+    "Resume"
+  ],
+  "author": "Andrii Priadko",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mendeleev/mendeleev.github.io/issues"
+  },
+  "homepage": "https://github.com/mendeleev/mendeleev.github.io",
+  "devDependencies": {
+    "browser-sync": "^2.12.5",
+    "gulp": "^3.9.1",
+    "gulp-sass": "^2.3.1",
+    "gulp-sourcemaps": "^2.0.0-alpha"
+  }
+}

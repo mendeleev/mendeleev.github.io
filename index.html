@@ -1,40 +1,87 @@
 ﻿<!doctype html>
-<html>
+<html ng-app="application">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>Andrii Priadko. Angular JS and JavaScript projects</title>
-	<link href='https://fonts.googleapis.com/css?family=Roboto+Condensed' rel='stylesheet' type='text/css' />
-	<style media="screen">
-		body {font-family: 'Roboto Condensed', sans-serif;}
-	</style>
+	<link href='https://fonts.googleapis.com/css?family=Merienda+One' rel='stylesheet' type='text/css' />
+	<link rel="stylesheet" href="css/style.css" media="screen" title="no title" charset="utf-8" />
+	<link rel="stylesheet" href="/libs/bootstrap/dist/css/bootstrap.min.css" media="screen" title="no title" charset="utf-8" />
+	<script type="text/javascript" src="libs/angular/angular.min.js"></script>
+	<script src="scripts/application.js" charset="utf-8"></script>
+	<script src="scripts/modules/skills/controller.js" charset="utf-8"></script>
 </head>
 <body>
+
 	<header>
 		<h2>Andrii Priadko</h2>
-		<p>JavaScript Developer</p>
+		<h3>Frontend Developer</h3>
 	</header>
-	<ul>
-		<li>
-			<h3><a href="snake/application">Snake HTML5 game</a></h3>
-			<p>simple snake game written with HTML5 and JavaScript</p>
-		</li>
-		<li>
-			<h3><a href="eshop">E-Shop</a></h3>
-			<p>Small shopping cart prototype (Flight JS)</p>
-		</li>
-		<li>
-			<h3><a href="phonecat">Phone Catalog</a></h3>
-			<p>Self learning project using official angular tutorial</p>
-		</li>
-		<li>
-			<h3><a href="gem-store">Flatlander Crafted Gems</a></h3>
-			<p>Study project of the angular course in codeschool</p>
-		</li>
-		<li>
-			<h3><a href="mockup">English e-learning app</a></h3>
-			<p>Small app for checking answers given by user</p>
-		</li>
-	</ul>
+
+	<div class="container">
+		<section>
+			<h3>Skills</h3>
+			<ul class="skills" ng-controller="skillsController">
+				<li ng-repeat="skill in skills track by $index">
+					<a class="label label-{{skill.style || 'primary'}}">{{skill.name}}</a>
+				</li>
+			</ul>
+		</section>
+
+		<section class="employment-history">
+			<h3>Employment history</h3>
+			<ul>
+				<li>
+					<h4>JavaScript full-stack developer at RIA.com</h4>
+					<p>Develop new features. Support legacy codebase</p>
+					<ul class="skills">
+						<li><span class="label label-primary">HTML</span></li>
+						<li><span class="label label-primary">CSS</span></li>
+						<li><span class="label label-primary">JavaScript</span></li>
+						<li><span class="label label-primary">NodeJS</span></li>
+						<li><span class="label label-primary">MongoDB</span></li>
+						<li><span class="label label-primary">RabbitMQ</span></li>
+					</ul>
+				</li>
+			</ul>
+		</section>
+
+		<section>
+			<h3>Projects</h3>
+			<ul>
+				<li>AUTO.RIA.com</li>
+			</ul>
+		</section>
+
+		<section>
+			<h3>Projects for fun</h3>
+			<ul class="projects">
+				<li>
+					<h4><a href="snake/application">Snake HTML5 game</a></h4>
+					<p>simple snake game written with HTML5 and JavaScript</p>
+				</li>
+				<li>
+					<h4><a href="eshop">E-Shop</a></h4>
+					<p>Small shopping cart prototype (Flight JS)</p>
+				</li>
+				<li>
+					<h4><a href="phonecat">Phone Catalog</a></h4>
+					<p>Self learning project using official angular tutorial</p>
+				</li>
+				<li>
+					<h4><a href="gem-store">Flatlander Crafted Gems</a></h4>
+					<p>Study project of the angular course in codeschool</p>
+				</li>
+				<li>
+					<h4><a href="mockup">English e-learning app</a></h4>
+					<p>Small app for checking answers given by user</p>
+				</li>
+			</ul>
+		</section>
+	</div>
+
+	<footer>Andrii Priadko. Frontend Developer</footer>
+
+
 </body>
 </html>
