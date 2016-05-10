@@ -10,6 +10,3 @@
 [submodule "catClicker"]
 	path = catClicker
 	url = https://github.com/mendeleev/catClicker.git
-[submodule "eshop"]
-	path = eshop
-	url = https://github.com/mendeleev/frontend-test-data.git
