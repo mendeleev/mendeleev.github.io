@@ -13,3 +13,6 @@
 [submodule "eshop"]
 	path = eshop
 	url = https://github.com/mendeleev/frontend-test-data.git
+[submodule "calculator"]
+	path = calculator
+	url = https://github.com/mendeleev/calculator.git
