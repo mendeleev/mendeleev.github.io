@@ -1,0 +1,25 @@
+header {
+  padding: 60px 10% 10px 10%;
+  text-align: center;
+
+  h2 {
+    font-size:300%;
+    text-transform: uppercase;
+  }
+
+  h3 {
+    font-weight: normal;
+    text-transform: uppercase;
+  }
+
+  .social {
+    margin: 20px 0;
+    list-style: none;
+    text-align: center;
+
+    li {
+      display: inline;
+      margin: 0 10px;
+    }
+  }
+}

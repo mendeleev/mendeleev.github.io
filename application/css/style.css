@@ -1,0 +1,46 @@
+* {
+  margin: 0;
+  padding: 0; }
+
+body {
+  font-family: 'Roboto Condensed', sans-serif; }
+
+a {
+  color: #09c;
+  text-decoration: none; }
+
+a:hover {
+  color: #06c;
+  text-decoration: underline; }
+
+.container {
+  max-width: 960px;
+  margin: auto; }
+
+header {
+  padding: 60px 10% 10px 10%;
+  text-align: center; }
+  header h2 {
+    font-size: 300%;
+    text-transform: uppercase; }
+  header h3 {
+    font-weight: normal;
+    text-transform: uppercase; }
+  header .social {
+    margin: 20px 0;
+    list-style: none;
+    text-align: center; }
+    header .social li {
+      display: inline;
+      margin: 0 10px; }
+
+.projects {
+  list-style: none;
+  padding: 0 10%; }
+  .projects li {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 15px; }
+  .projects .links {
+    margin-top: 10px;
+    color: #ccc; }

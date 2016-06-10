@@ -1,0 +1,23 @@
+* {
+  margin:0;
+  padding:0;
+}
+
+body {
+  font-family: 'Roboto Condensed', sans-serif;
+}
+
+a {
+  color: #09c;
+  text-decoration: none;
+
+  &:hover {
+    color: #06c;
+    text-decoration: underline;
+  }
+}
+
+.container {
+  max-width: 960px;
+  margin: auto;
+}
