@@ -16,3 +16,9 @@
 [submodule "calculator"]
 	path = calculator
 	url = https://github.com/mendeleev/calculator.git
+[submodule "blackjack"]
+	path = blackJack
+	url = https://github.com/mendeleev/blackjackgame.git
+[submodule "blackjackgame"]
+	path = blackjackgame
+	url = https://github.com/mendeleev/blackjackgame.git
