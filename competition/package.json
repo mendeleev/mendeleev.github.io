@@ -1,0 +1,15 @@
+{
+  "name": "contact_form",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "browser-sync start --server './' --files './'"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "browsersync": "0.0.1-security"
+  }
+}
