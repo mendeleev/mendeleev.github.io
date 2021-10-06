@@ -6,7 +6,12 @@
         17727: 6.5,
         19164: 5.7,
         19178: 11.5,
-        19134: 1
+        19134: 1,
+        17813: 6,
+        17730: 6.5,
+        19135: 6.1,
+        19138: 7.0,
+        19139: 4
     };
 
     const villages = {
@@ -15,8 +20,31 @@
         "5.7": "М. Крушлинці",
         "11.5": 'В. Крушлинці',
         "1": "Він. Хутори",
-        "6.0": "Писарівка",
-        "6.1": "Щітки"
+        "6": "Писарівка",
+        "6.1": "Щітки",
+        "4": "Стадниця, Він. Хутори, Щітки, М/В. Крушлинці, Гавришівка"
+    };
+
+    function sortByRating(a, b) {
+        return b.rating - a.rating;
+    }
+
+    function getProjectObj(project) {
+        const isVillage = String(project.Id) in COEFFICIENTS;
+        const coefficient = isVillage ? COEFFICIENTS[String(project.Id)] : 1;
+        const totalVotes = Number(project.OnlineVotes) + Number(project.OfflineVotes);
+        return {
+            id: project.Id,
+            number: project.Number,
+            title: project.Title,
+            village: isVillage ? getVillageByCoefficient(coefficient) : 'Вінниця',
+            budget: new Intl.NumberFormat('uk-UA').format(project.Budget) + ' грн',
+            budgetValue: project.Budget,
+            totalVotes: totalVotes,
+            coefficient: coefficient,
+            votesLag: 0,
+            rating: getRating(project.Budget, totalVotes, coefficient)
+        }
     };
 
     /**
@@ -32,9 +60,46 @@
 
         let projects = (await response.json()).Projects;
 
-        return projects.filter((project) => {
-            return project ? ids.indexOf(project.Id) >= 0 : false;
+        let result = {
+            villages: {
+                big: [],
+                little: []
+            },
+            city: {
+                big: [],
+                small: []
+            }
+        };
+
+        result.villages.big = projects.filter((project) => {
+            return project ? ids.indexOf(project.Id) >= 0 && project.Budget > 250000: false;
+        }).map(getProjectObj).sort(sortByRating);
+        result.villages.big.map((project) => {
+            project.votesLag = calculateVotesLag(result.villages.big[0], project);
         });
+
+        result.villages.small = projects.filter((project) => {
+            return project ? ids.indexOf(project.Id) >= 0 && project.Budget <= 250000: false;
+        }).map(getProjectObj).sort(sortByRating);
+        result.villages.small.map((project) => {
+            project.votesLag = calculateVotesLag(result.villages.small[0], project);
+        });
+
+        result.city.big = projects.filter((project) => {
+            return project ? ids.indexOf(project.Id) === -1 && project.Budget > 250000: false;
+        }).map(getProjectObj).sort(sortByRating);
+        result.city.big.map((project) => {
+            project.votesLag = calculateVotesLag(result.city.big[0], project);
+        });
+
+        result.city.small = projects.filter((project) => {
+            return project ? ids.indexOf(project.Id) === -1 && project.Budget <= 250000: false;
+        }).map(getProjectObj).sort(sortByRating);
+        result.city.small.map((project) => {
+            project.votesLag = calculateVotesLag(result.city.small[0], project);
+        });
+
+        return result;
     }
 
     /**
@@ -78,33 +143,8 @@
     }
 
     let projects = await getProjects();
-    projects = projects.map((project) => {
-        const coefficient = COEFFICIENTS[String(project.Id)];
-        const totalVotes = Number(project.OnlineVotes) + Number(project.OfflineVotes);
-        return {
-            id: project.Id,
-            number: project.Number,
-            title: project.Title,
-            village: getVillageByCoefficient(coefficient),
-            budget: new Intl.NumberFormat('uk-UA').format(project.Budget) + ' грн',
-            budgetValue: project.Budget,
-            totalVotes: totalVotes,
-            coefficient: coefficient,
-            votesLag: 0,
-            rating: getRating(project.Budget, totalVotes, coefficient)
-        }
-    }).sort(
-        (a, b) => {
-            return b.rating - a.rating;
-        }
-    );
 
-    let topProject = projects[0];
-    projects.map((project) => {
-        project.votesLag = calculateVotesLag(topProject, project);
-    });
-
-    const mapping = {
+    const villagesMapping = {
         number: '№',
         title: 'Назва',
         village: 'Населений пункт',
@@ -115,12 +155,21 @@
         votesLag: 'Відставання'
     };
 
+    const cityMapping = {
+        number: villagesMapping.number,
+        title: villagesMapping.title,
+        budget: villagesMapping.budget,
+        totalVotes: villagesMapping.totalVotes,
+        rating: villagesMapping.rating,
+        votesLag: villagesMapping.votesLag
+    };
+
     /**
      * @description creates table rows
      * @param {object} project - instance of project
      */
-    function renderProject(project) {
-        const tableBody = document.querySelector('.js-results-body');
+    function renderProject(project, mapping, selector) {
+        const tableBody = document.querySelector(selector);
         const row = document.createElement("tr");
         let cols = Object.keys(mapping).map((name) => {
             let cell;
@@ -140,11 +189,20 @@
         tableBody.append(row);
     }
 
-    for (let project of projects) {
-        renderProject(project);
+    for (let project of projects.villages.big) {
+        renderProject(project, villagesMapping, '.js-results-body-villages-big');
     }
 
-    console.table(projects);
-    
+    for (let project of projects.villages.small) {
+        renderProject(project, villagesMapping, '.js-results-body-villages-small');
+    }
+
+    for (let project of projects.city.big) {
+        renderProject(project, cityMapping, '.js-results-body-city-big');
+    }
+
+    for (let project of projects.city.small) {
+        renderProject(project, cityMapping, '.js-results-body-city-small');
+    }    
 
 })();
