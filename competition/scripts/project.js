@@ -203,6 +203,11 @@
 
     for (let project of projects.city.small) {
         renderProject(project, cityMapping, '.js-results-body-city-small');
-    }    
+    }
+    
+    for (let el of document.querySelectorAll('.js-curdate')) {
+        let date = new Date();
+        el.innerHTML = `дата: ${date.toLocaleDateString()}, час: ${date.toLocaleTimeString()}`;
+    }
 
 })();
