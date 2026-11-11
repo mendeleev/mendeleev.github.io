@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Робо-Склад — сокобан для дітей: допоможи роботу розставити коробки по місцях. Працює офлайн.">
+<meta name="theme-color" content="#F3EEE4">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Робо-Склад">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Робо-Склад — Sokoban</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root{
+    --paper:#F3EEE4;--card:#FFFDF8;--ink:#22303F;--muted:#55606F;--lip:#D6CAB5;
+    --kraft:#C98A45;--yellow:#FFC93C;--yellow-d:#C98F00;--orange:#E2552B;--mint:#1A9E70;--blue:#2470D6;
+    --display:"Unbounded","Rubik","Segoe UI",system-ui,sans-serif;--body:"Rubik","Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;color:var(--ink);font-family:var(--body);overflow:hidden;user-select:none;-webkit-user-select:none;overscroll-behavior:none;-webkit-touch-callout:none;
+    background:radial-gradient(120% 70% at 50% 0%,#FBF8F2 0%,var(--paper) 55%,#E9E2D4 100%)}
+  button{font-family:inherit;color:inherit}
+  button:focus-visible,.tools button:focus-visible,#levels button:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+  svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  #app{height:100%;display:flex;flex-direction:column;max-width:640px;margin:0 auto;gap:8px;
+    padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+  header{display:flex;align-items:center;gap:8px}
+  #logo{width:40px;height:40px;flex:none}
+  .ttl{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.15}
+  .ttl b{font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:-.01em;white-space:nowrap}
+  .ttl small{font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+  .iconbtn{border:none;background:var(--card);border-radius:14px;width:44px;height:44px;cursor:pointer;flex:none;display:grid;place-items:center;
+    box-shadow:0 4px 0 var(--lip),0 8px 14px rgba(70,50,20,.10);margin-bottom:4px}
+  .iconbtn:active,.act:active{transform:translateY(3px);box-shadow:0 1px 0 var(--lip)}
+
+  #stats{display:flex;background:var(--ink);border-radius:14px;padding:7px 6px;color:#FFE08A;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+  #stats div{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+  #stats div+div{border-left:1px solid rgba(255,255,255,.12)}
+  #stats span{font-size:10px;font-weight:700;letter-spacing:.09em;color:#B9C3D0;text-transform:uppercase;white-space:nowrap}
+  #stats b{font-family:var(--display);font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
+
+  #stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;touch-action:none;position:relative}
+  canvas#cv{display:block}
+  #toast{position:absolute;left:50%;bottom:4px;transform:translate(-50%,10px);background:#FFF4D4;color:var(--ink);border:2px solid #F0C24B;
+    padding:9px 14px;border-radius:14px;font-weight:600;font-size:15px;opacity:0;transition:.22s;pointer-events:none;width:max-content;max-width:min(340px,94%);
+    text-align:center;z-index:2;box-shadow:0 8px 20px rgba(70,50,20,.18);text-wrap:balance}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+
+  #controls{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .side{display:flex;flex-direction:column;gap:12px;flex:1;max-width:190px}
+  .act{border:none;background:var(--card);border-radius:16px;min-height:50px;padding:8px 14px;font-size:16px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 0 var(--lip),0 8px 14px rgba(70,50,20,.10);margin-bottom:4px}
+  .act.hintb{background:var(--yellow);box-shadow:0 4px 0 #CC9500,0 8px 14px rgba(150,100,0,.18)}
+  .act.hintb:active{box-shadow:0 1px 0 #CC9500}
+  .act.primary{background:var(--ink);color:#FFE08A;box-shadow:0 4px 0 #0F1823,0 8px 14px rgba(20,30,40,.2)}
+  .act.primary:active{box-shadow:0 1px 0 #0F1823}
+  .act[disabled]{opacity:.6;pointer-events:none}
+
+  #pad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,64px);gap:7px;flex:none}
+  #pad button{border:none;border-radius:18px;background:var(--card);color:var(--ink);cursor:pointer;touch-action:none;display:grid;place-items:center;
+    box-shadow:0 5px 0 var(--lip),0 8px 14px rgba(70,50,20,.12)}
+  #pad button svg{width:30px;height:30px;stroke-width:3.4}
+  #pad button[data-d="d"] svg{transform:rotate(180deg)} #pad button[data-d="l"] svg{transform:rotate(-90deg)} #pad button[data-d="r"] svg{transform:rotate(90deg)}
+  #pad button:active,#pad button.on{transform:translateY(4px);box-shadow:0 1px 0 var(--lip)}
+  #pad button.glow{animation:glow .45s ease-in-out 4 alternate}
+  @keyframes glow{to{background:var(--yellow);box-shadow:0 5px 0 #CC9500,0 0 0 6px rgba(255,201,60,.35)}}
+  #pad .c{pointer-events:none;display:grid;place-items:center}
+  #pad .c i{width:26px;height:26px;border-radius:50%;background:repeating-linear-gradient(-45deg,var(--yellow) 0 5px,var(--ink) 5px 10px);opacity:.85}
+
+  #editBar{display:none;flex-direction:column;gap:10px}
+  .tools{display:flex;gap:7px}
+  .tools button{flex:1;border:none;border-radius:14px;background:var(--card);padding:7px 2px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;
+    box-shadow:0 4px 0 var(--lip);margin-bottom:4px;min-height:56px}
+  .tools button canvas{width:30px;height:30px}
+  .tools button span{font-size:12px;font-weight:700;color:var(--muted)}
+  .tools button[aria-pressed="true"]{background:#FFF1C7;box-shadow:0 4px 0 #CC9500,inset 0 0 0 3px var(--yellow)}
+  .erow{display:flex;gap:8px}.erow .act{flex:1;min-width:0}
+  .hint{font-size:13px;color:var(--muted);text-align:center;font-weight:600;text-wrap:balance}
+  body.edit .hint{display:none}
+
+  body.edit #controls,body.edit #stats{display:none!important}
+  body.edit #editBar{display:flex}
+
+  .overlay{position:fixed;inset:0;background:rgba(34,48,63,.5);display:none;align-items:flex-end;justify-content:center;z-index:5;padding:16px}
+  .overlay.show{display:flex}
+  @media (min-height:560px){.overlay{align-items:center}}
+  .card{position:relative;background:var(--card);border-radius:24px;padding:26px 22px 20px;max-width:430px;width:100%;text-align:center;
+    box-shadow:0 24px 60px rgba(20,25,35,.35);max-height:94vh;overflow:auto;animation:up .32s cubic-bezier(.2,1.3,.4,1)}
+  .card::before{content:"";position:absolute;left:0;right:0;top:0;height:10px;border-radius:24px 24px 0 0;
+    background:repeating-linear-gradient(-45deg,var(--yellow) 0 12px,var(--ink) 12px 24px)}
+  @keyframes up{from{transform:translateY(40px);opacity:0}}
+  .card h2{margin:8px 0 6px;font-family:var(--display);font-size:24px;font-weight:800;letter-spacing:-.01em}
+  .card p{margin:4px 0;color:var(--muted);font-weight:600;font-size:15px;line-height:1.4}
+  .card p.goalline{color:var(--ink);font-weight:700;margin-bottom:16px}
+  .stars{display:flex;justify-content:center;gap:8px;margin:2px 0}
+  .stars svg{width:56px;height:56px}
+  .stars svg.pop{animation:pop .4s cubic-bezier(.2,1.6,.4,1) both}
+  @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+  .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .row .act{flex:1;min-width:120px}
+  #levels{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 16px}
+  #levels button{border:none;border-radius:14px;aspect-ratio:1;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    background:linear-gradient(90deg,transparent 44%,rgba(255,245,225,.55) 44% 56%,transparent 56%),linear-gradient(#E6B677,#CF9555);
+    box-shadow:0 4px 0 #9A6430;margin-bottom:4px;color:#3B2410}
+  #levels button b{font-family:var(--display);font-size:20px;font-weight:800}
+  #levels button.done{background:linear-gradient(90deg,transparent 44%,rgba(255,255,255,.5) 44% 56%,transparent 56%),linear-gradient(#7FD8B3,#3FB585);box-shadow:0 4px 0 #1C7A55;color:#0E3B29}
+  #levels button.cur{outline:3px solid var(--ink);outline-offset:2px}
+  #levels button .st{display:flex;gap:1px}
+  #levels button .st svg{width:15px;height:15px}
+  #progress{font-weight:700;color:var(--muted)}
+  .rules{text-align:left;margin:12px 0 18px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+  .rules li{display:flex;gap:10px;align-items:flex-start;font-weight:600;font-size:15px;line-height:1.35}
+  .rules li b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--ink);color:#FFE08A;display:grid;place-items:center;font-size:13px;font-family:var(--display)}
+  #tutScene{width:100%;max-width:280px;height:auto;margin:6px auto 0;display:block}
+
+  #fx{position:fixed;inset:0;pointer-events:none;z-index:6}
+
+  @media (max-height:700px){
+    #pad{grid-template-columns:repeat(3,56px);grid-template-rows:repeat(3,56px);gap:6px}
+    .hint{display:none}
+    #stats{padding:5px 6px}#stats b{font-size:15px}
+  }
+  /* Широкий екран і телефон горизонтально: кнопки по боках від поля */
+  @media (min-aspect-ratio:5/4){
+    #app{max-width:1180px;display:grid;grid-template-columns:minmax(150px,230px) 1fr minmax(186px,240px);
+      grid-template-rows:auto auto 1fr;grid-template-areas:"head head head" "stats stage pad" "side stage pad";column-gap:18px;row-gap:10px}
+    header{grid-area:head} #stats{grid-area:stats;flex-direction:column;gap:6px;padding:10px 6px;align-self:start}
+    #stats div+div{border-left:none;border-top:1px solid rgba(255,255,255,.12);padding-top:6px}
+    #stage{grid-area:stage} #controls{display:contents} .side{grid-area:side;max-width:none;align-self:start}
+    #pad{grid-area:pad;align-self:center;justify-self:center}
+    #editBar{grid-column:3;grid-row:2 / span 2;align-self:center}
+    .tools{flex-wrap:wrap}.tools button{flex:1 1 40%}
+    .erow{flex-direction:column}
+    .hint{display:none}
+  }
+  @media (min-aspect-ratio:5/4) and (max-height:480px){
+    #app{padding:6px 12px;row-gap:6px;column-gap:12px;grid-template-columns:148px 1fr 168px}
+    #stats{padding:6px 4px;gap:3px}#stats div+div{padding-top:3px}#stats b{font-size:14px}#stats span{font-size:9px}
+    .side{gap:8px}
+    #logo{width:32px;height:32px}.iconbtn{width:40px;height:40px}
+    #pad{grid-template-columns:repeat(3,50px);grid-template-rows:repeat(3,50px);gap:6px}
+    #pad button svg{width:24px;height:24px}
+    .act{min-height:44px;font-size:15px;padding:6px 10px}
+    .tools button{min-height:48px;padding:4px 2px}.tools button canvas{width:24px;height:24px}
+    #levels{grid-template-columns:repeat(8,1fr);margin:10px 0 12px}#levels button{aspect-ratio:auto;height:60px}
+    .card{max-width:640px;padding:20px 18px 14px}.card h2{font-size:20px;margin:4px 0}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .card,.stars svg.pop,#pad button.glow{animation:none}
+    #toast{transition:none}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <canvas id="logo" aria-hidden="true"></canvas>
+    <div class="ttl"><b>Робо-Склад</b><small id="lvlName">Рівень 1</small></div>
+    <button class="iconbtn" id="resetBtn" aria-label="Почати рівень заново" title="Заново"><svg class="i" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20.5 4v5h-5"/></svg></button>
+    <button class="iconbtn" id="soundBtn" aria-label="Звук" aria-pressed="true" title="Звук"></button>
+    <button class="iconbtn" id="menuBtn" aria-label="Обрати рівень" title="Рівні"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z"/></svg></button>
+  </header>
+  <div id="stats" aria-live="off">
+    <div><span>Кроки</span><b id="sMoves">0</b></div>
+    <div><span>На місці</span><b id="sBoxes">0/0</b></div>
+    <div><span>На 3 зірки</span><b id="sPar">—</b></div>
+  </div>
+  <div id="stage"><canvas id="cv" role="img" aria-label="Ігрове поле"></canvas><div id="toast" role="status" aria-live="polite"></div></div>
+  <div id="controls">
+    <div class="side">
+      <button class="act hintb" id="hintBtn"><svg class="i" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"/></svg>Підказка</button>
+      <button class="act" id="undoBtn"><svg class="i" viewBox="0 0 24 24"><path d="M9 5 4 10l5 5"/><path d="M4 10h10a6 6 0 0 1 0 12h-3"/></svg>Назад</button>
+    </div>
+    <div id="pad">
+      <div class="c"></div><button data-d="u" aria-label="Вгору"><svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button><div class="c"></div>
+      <button data-d="l" aria-label="Вліво"><svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button><div class="c"><i></i></div><button data-d="r" aria-label="Вправо"><svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+      <div class="c"></div><button data-d="d" aria-label="Вниз"><svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button><div class="c"></div>
+    </div>
+  </div>
+  <div id="editBar">
+    <div class="tools" id="tools" role="group" aria-label="Інструменти">
+      <button data-t="#" aria-pressed="true"><canvas></canvas><span>Стіна</span></button>
+      <button data-t="$" aria-pressed="false"><canvas></canvas><span>Коробка</span></button>
+      <button data-t="." aria-pressed="false"><canvas></canvas><span>Ціль</span></button>
+      <button data-t="@" aria-pressed="false"><canvas></canvas><span>Робот</span></button>
+      <button data-t=" " aria-pressed="false"><canvas></canvas><span>Стерти</span></button>
+    </div>
+    <div class="erow">
+      <button class="act" id="clearBtn">Очистити</button>
+      <button class="act" id="exitEdit">Вийти</button>
+      <button class="act primary" id="playEdit">Грати ▶</button>
+    </div>
+  </div>
+  <div class="hint" id="hintLine">Свайп, стрілки або торкнись клітинки — робот доїде сам</div>
+</div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="sr" id="sr" aria-live="polite"></div>
+
+<div class="overlay" id="winOv" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+  <div class="card">
+    <div class="stars" id="winStars"></div>
+    <h2 id="winTitle">Молодець!</h2>
+    <p id="winText"></p>
+    <p class="goalline" id="winGoal"></p>
+    <div class="row">
+      <button class="act" id="againBtn">Ще раз</button>
+      <button class="act primary" id="nextBtn">Далі ▶</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="menuOv" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+  <div class="card">
+    <h2 id="menuTitle">Обери рівень</h2>
+    <div id="progress"></div>
+    <div id="levels"></div>
+    <div class="row">
+      <button class="act primary" id="openEditor">Свій рівень</button>
+      <button class="act" id="howBtn">Як грати</button>
+      <button class="act" id="closeMenu">Закрити</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="tutOv" role="dialog" aria-modal="true" aria-labelledby="tutTitle">
+  <div class="card">
+    <h2 id="tutTitle">Як грати</h2>
+    <canvas id="tutScene" aria-hidden="true"></canvas>
+    <ol class="rules">
+      <li><b>1</b><span>Штовхай усі коробки на жовті мітки.</span></li>
+      <li><b>2</b><span>Робот уміє тільки штовхати — тягнути коробку назад не вийде.</span></li>
+      <li><b>3</b><span>Помилився? Тисни «Назад». Застряг? Натисни «Підказка».</span></li>
+    </ol>
+    <div class="row"><button class="act primary" id="tutGo">Поїхали!</button></div>
+  </div>
+</div>
+
+<script>
+// ---------- Рівні (усі перевірено розв'язувачем; opt — мінімум кроків) ----------
+const LEVELS = [
+  {opt:2,  map:["#######","#     #","# @$ .#","#     #","#######"]},
+  {opt:4,  map:["#######","#  .  #","#  $  #","# @$ .#","#     #","#######"]},
+  {opt:6,  map:["#########","#       #","#.$ @ $.#","#       #","#########"]},
+  {opt:7,  map:["#######","#  .  #","# #$# #","#.$@$.#","# #$# #","#  .  #","#######"]},
+  {opt:12, map:["########","#  #   #","# $  $ #","#.##@#.#","#      #","########"]},
+  {opt:15, map:["#######","#  .. #","# $$  #","#  #  #","#  @  #","#######"]},
+  {opt:16, map:["#######","#. .  #","# $$  #","#  #  #","## @ ##"," #   # "," ##### "]},
+  {opt:17, map:["  ######","  #  . #","### #$ #","# $ .  #","# #@ # #","#   $. #","####   #","   #####"]},
+  {opt:18, map:["########","#   #  #","# $ # .#","#  @$ .#","#      #","#      #","########"]},
+  {opt:18, map:["########","#..    #","#  $#  #","## $   #"," #  @  #"," #######"]},
+  {opt:21, map:["#######","#.   .#","# $ $ #","#  @  #","# $ $ #","#.   .#","#######"]},
+  {opt:24, map:["#########","#.  #  .#","# $   $ #","## # # ##"," # @ $ # "," #  .  # "," ####### "]},
+  {opt:24, map:["  ######","  #    #","  # ## #","### $  #","#  $. ##","# #.@ # ","#     # ","####### "]},
+  {opt:32, map:["########","#  .   #","# $##$ #","#. ## .#","# $  $ #","#   @. #","########"]},
+  {opt:32, map:["#########","#   #   #","# $ . $ #","# #.@.# #","# $ . $ #","#   #   #","#########"]},
+  {opt:69, map:["##########","#   ##   #","# $    $ #","#  #..#  #","## #..# ##","#  $  $  #","#   @    #","##########"]},
+];
+
+const $=id=>document.getElementById(id);
+const RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function plural(n,f){const a=Math.abs(n)%100,b=a%10;if(a>10&&a<20)return f[2];if(b===1)return f[0];if(b>1&&b<5)return f[1];return f[2]}
+const stepsTxt=n=>n+" "+plural(n,["крок","кроки","кроків"]);
+const STAR=(on,cls="",onTile=false)=>`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.5l-5.9 3.1 1.2-6.5L2.5 9.5l6.6-.9z" fill="${on?"#FFD23F":onTile?"rgba(255,255,255,.35)":"#D5CCBD"}" stroke="${on?"#7A4E00":onTile?"rgba(60,35,10,.45)":"#B3A890"}" stroke-width="${onTile?1.6:1.3}" stroke-linejoin="round"/></svg>`;
+
+// ---------- Збереження (необов'язкове) ----------
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let best=store.get("robosklad-best2",{});
+let soundOn=store.get("robosklad-sound",true);
+let customLevel=store.get("robosklad-custom",null);
+
+// ---------- Звук ----------
+let actx=null;
+function beep(freq,dur=0.08,type="sine",vol=0.12,delay=0){
+  if(!soundOn)return;
+  try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();
+    const t=actx.currentTime+delay,o=actx.createOscillator(),g=actx.createGain();
+    o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+dur+0.02);}catch(e){}
+}
+const sfx={step(){beep(520,0.04,"triangle",0.05)},push(){beep(140,0.09,"square",0.06)},
+  goal(){beep(880,0.1,"sine",0.12);beep(1320,0.14,"sine",0.1,0.08)},bump(){beep(90,0.06,"sawtooth",0.05)},
+  stuck(){beep(300,0.12,"triangle",0.09);beep(200,0.18,"triangle",0.09,0.12)},
+  hint(){beep(660,0.07,"sine",0.08);beep(990,0.09,"sine",0.08,0.07)},
+  star(i){beep(784*Math.pow(1.26,i),0.16,"triangle",0.12)},
+  win(){[523,659,784,1047].forEach((f,i)=>beep(f,0.18,"triangle",0.12,i*0.11))}};
+
+// ---------- Розв'язувач (для підказок і перевірки своїх рівнів) ----------
+// Пошук у ширину з відсіканням «мертвих» клітинок, з яких коробку вже не доставити до цілі.
+function makeSolver(Wd,Hd,wallSet,goalSet){
+  const N=Wd*Hd,wall=new Uint8Array(N),goal=new Uint8Array(N),live=new Uint8Array(N);
+  for(let i=0;i<N;i++){const x=i%Wd,y=(i/Wd)|0;wall[i]=wallSet.has(x+","+y)?1:0;goal[i]=goalSet.has(x+","+y)?1:0}
+  const D=[-Wd,Wd,-1,1],M="udlr";
+  const inb=i=>i>=0&&i<N;
+  const st=[];for(let i=0;i<N;i++)if(goal[i]){live[i]=1;st.push(i)}
+  while(st.length){const c=st.pop();for(const d of D){const a=c+d,b=c+2*d;
+    if(!inb(a)||!inb(b)||wall[a]||wall[b]||live[a])continue;
+    if(Math.abs(d)===1&&(((a/Wd)|0)!==((c/Wd)|0)||((b/Wd)|0)!==((a/Wd)|0)))continue;
+    live[a]=1;st.push(a)}}
+  function solve(px,py,boxList,cap=400000){
+    const p0=py*Wd+px,b0=boxList.map(b=>b.y*Wd+b.x).sort((a,b)=>a-b);
+    const k0=p0+"|"+b0.join(",");
+    const prev=new Map([[k0,null]]);let q=[[p0,b0,k0]],qi=0;
+    const done=bs=>bs.every(i=>goal[i]);
+    if(done(b0))return "";
+    while(qi<q.length){
+      if(prev.size>cap)return null;
+      const [p,bs,k]=q[qi++];const bset=new Set(bs);
+      for(let m=0;m<4;m++){const d=D[m],n=p+d;
+        if(!inb(n)||wall[n])continue;
+        if(m>1&&((n/Wd)|0)!==((p/Wd)|0))continue;
+        let nb=bs;
+        if(bset.has(n)){const t=n+d;
+          if(!inb(t)||wall[t]||bset.has(t)||!live[t])continue;
+          if(m>1&&((t/Wd)|0)!==((n/Wd)|0))continue;
+          nb=bs.map(v=>v===n?t:v).sort((a,b)=>a-b);}
+        const nk=n+"|"+nb.join(",");
+        if(prev.has(nk))continue;prev.set(nk,[k,M[m]]);
+        if(nb!==bs&&done(nb)){let s="",c=nk;while(prev.get(c)){const [pk,mv]=prev.get(c);s=mv+s;c=pk}return s}
+        q.push([n,nb,nk]);
+      }
+      if(qi>50000){q=q.slice(qi);qi=0}
+    }
+    return false; // розв'язку немає
+  }
+  return {solve,live};
+}
+
+// Розв'язувач працює у фоновому потоці (Web Worker), щоб гра не підвисала.
+const WORKER_SRC="const makeSolver="+makeSolver.toString()+";\nonmessage=e=>{const d=e.data;let res=null;try{res=makeSolver(d.W,d.H,new Set(d.walls),new Set(d.goals)).solve(d.px,d.py,d.boxes,d.cap)}catch(err){}postMessage({id:d.id,res})};";
+let worker=null,workerOk=true,reqId=0;const pending=new Map();
+function solveSync(j){return makeSolver(j.W,j.H,new Set(j.walls),new Set(j.goals)).solve(j.px,j.py,j.boxes,j.cap)}
+function getWorker(){
+  if(!workerOk)return null;if(worker)return worker;
+  try{worker=new Worker(URL.createObjectURL(new Blob([WORKER_SRC],{type:"text/javascript"})));
+    worker.onmessage=e=>{const p=pending.get(e.data.id);if(p){pending.delete(e.data.id);p.resolve(e.data.res)}};
+    worker.onerror=()=>{workerOk=false;const ps=[...pending.values()];pending.clear();if(worker)worker.terminate();worker=null;
+      ps.forEach(p=>setTimeout(()=>p.resolve(solveSync(p.job)),30))};
+    return worker}catch(e){workerOk=false;return null}
+}
+function cancelSolves(){if(!pending.size)return;const ps=[...pending.values()];pending.clear();if(worker){worker.terminate();worker=null}ps.forEach(p=>p.resolve(undefined))}
+function solveAsync(job){return new Promise(resolve=>{const w=getWorker();
+  if(!w){setTimeout(()=>resolve(solveSync(job)),30);return}
+  const id=++reqId;pending.set(id,{resolve,job});w.postMessage({...job,id})})}
+
+// ---------- Стан гри ----------
+let W,H,walls,goals,inside,boxes,player,dir,moves,history,levelIdx=0,won=false,cur=null,solver=null,hintsUsed=0;
+let mode="play",serial=0,winTimer=null;
+const DIRS={u:[0,-1],d:[0,1],l:[-1,0],r:[1,0]};
+const ANG={u:0,r:Math.PI/2,d:Math.PI,l:-Math.PI/2};
+const key=(x,y)=>x+","+y;
+let anim={px:0,py:0,fromX:0,fromY:0,t:1,box:null,bfx:0,bfy:0,angle:0,targetAngle:0,push:0,tread:0,winStart:0};
+let moveQueue=[],tracks=[],hintArrow=null,stuckShown=false;
+const STEP_MS=125;
+
+function parseMap(rows){
+  const Wd=Math.max(...rows.map(r=>r.length)),Hd=rows.length,ws=new Set(),gs=new Set(),bx=[];let p=null;
+  rows.forEach((r,y)=>{for(let x=0;x<Wd;x++){const c=r[x]||" ";
+    if(c==="#")ws.add(key(x,y));if(c==="."||c==="*"||c==="+")gs.add(key(x,y));
+    if(c==="$"||c==="*")bx.push({x,y,id:bx.length});if(c==="@"||c==="+")p={x,y};}});
+  return {W:Wd,H:Hd,walls:ws,goals:gs,boxes:bx,player:p};
+}
+function loadLevel(i){
+  if(i==="custom"){if(!customLevel){loadLevel(0);return}levelIdx="custom";startMap({map:customLevel.map,opt:customLevel.opt,name:"Мій рівень"});return}
+  levelIdx=(i+LEVELS.length)%LEVELS.length;
+  startMap({...LEVELS[levelIdx],name:"Рівень "+(levelIdx+1)+" з "+LEVELS.length});
+}
+function haltEverything(){
+  clearTimeout(winTimer);winTimer=null;cancelSolves();stopAllHolds();
+  $("winOv").classList.remove("show");parts=[];hideToast();hintBusy=false;checking=false;
+}
+function startMap(def){
+  haltEverything();
+  mode="play";setModeUI();cur=def;serial++;
+  const m=parseMap(def.map);({W,H,walls,goals,boxes,player}=m);
+  inside=new Set();const st=[[player.x,player.y]];
+  while(st.length){const [x,y]=st.pop();const k=key(x,y);
+    if(inside.has(k)||walls.has(k)||x<0||y<0||x>=W||y>=H)continue;inside.add(k);st.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);}
+  solver=makeSolver(W,H,walls,goals);
+  dir="u";moves=0;history=[];won=false;moveQueue=[];tracks=[];hintArrow=null;stuckShown=false;hintsUsed=0;
+  anim.px=player.x;anim.py=player.y;anim.t=1;anim.box=null;anim.angle=anim.targetAngle=0;anim.winStart=0;
+  $("lvlName").textContent=def.name;
+  $("sPar").textContent=def.opt?"≤ "+Math.ceil(def.opt*1.25):"—";
+  cv.setAttribute("aria-label",`${def.name}: робот і ${boxes.length} ${plural(boxes.length,["коробка","коробки","коробок"])}`);
+  updateHud();resize();
+}
+function updateHud(){
+  $("sMoves").textContent=moves;
+  $("sBoxes").textContent=boxes.filter(b=>goals.has(key(b.x,b.y))).length+"/"+boxes.length;
+}
+function boxAt(x,y){return boxes.find(b=>b.x===x&&b.y===y)}
+function isStuck(b){
+  if(goals.has(key(b.x,b.y)))return false;
+  if(solver&&!solver.live[b.y*W+b.x])return true;
+  const w=(x,y)=>walls.has(key(x,y));
+  return (w(b.x-1,b.y)||w(b.x+1,b.y))&&(w(b.x,b.y-1)||w(b.x,b.y+1));
+}
+const snapshot=extra=>({p:{...player},d:dir,boxes:boxes.map(o=>({...o})),moves,...extra});
+const stateToken=()=>serial+"|"+player.x+","+player.y+"|"+boxes.map(b=>b.x+","+b.y).join(";");
+
+function tryMove(d,fromQueue){
+  if(won||mode!=="play")return false;
+  if(anim.t<1){if(!fromQueue&&moveQueue.length<1)moveQueue.push(d);return false}
+  const [dx,dy]=DIRS[d];setDir(d);
+  const nx=player.x+dx,ny=player.y+dy;
+  if(walls.has(key(nx,ny))){sfx.bump();moveQueue=[];return false}
+  const b=boxAt(nx,ny);
+  const snap=snapshot();
+  if(b){
+    const bx=nx+dx,by=ny+dy;
+    if(walls.has(key(bx,by))||boxAt(bx,by)){sfx.bump();moveQueue=[];return false}
+    anim.box=b;anim.bfx=b.x;anim.bfy=b.y;b.x=bx;b.y=by;anim.push=1;
+    if(goals.has(key(bx,by))){sfx.goal();const n=boxes.filter(o=>goals.has(key(o.x,o.y))).length;say(`Коробка на місці: ${n} з ${boxes.length}`)}else sfx.push();
+  }else{anim.box=null;sfx.step()}
+  history.push(snap);
+  hintArrow=null;
+  tracks.push({x:player.x,y:player.y,a:ANG[d],t:performance.now()});if(tracks.length>40)tracks.shift();
+  anim.fromX=player.x;anim.fromY=player.y;anim.t=0;anim.start=performance.now();
+  player.x=nx;player.y=ny;moves++;updateHud();return true;
+}
+function setDir(d){dir=d;let a=ANG[d],c=anim.targetAngle;while(a-c>Math.PI)a-=2*Math.PI;while(a-c<-Math.PI)a+=2*Math.PI;anim.targetAngle=a}
+function restore(s){
+  player={...s.p};boxes=s.boxes.map(o=>({...o}));moves=s.moves;setDir(s.d);moveQueue=[];hintArrow=null;
+  anim.t=1;anim.box=null;anim.px=player.x;anim.py=player.y;updateHud();
+  stuckShown=boxes.some(isStuck);
+}
+function undo(){
+  if(won||!history.length||mode!=="play")return;
+  const s=history.pop();restore(s);beep(330,0.06,"triangle",0.06);
+  if(s.reset)toast("Повернув усе, як було до «Заново»");
+}
+// «Заново» тепер можна скасувати кнопкою «Назад»
+function reset(){
+  if(mode!=="play")return;
+  if(won){loadLevel(levelIdx);return}
+  if(!moves&&!history.length)return;
+  history.push(snapshot({reset:true}));
+  const m=parseMap(cur.map);player=m.player;boxes=m.boxes;moves=0;setDir("u");moveQueue=[];hintArrow=null;tracks=[];stuckShown=false;
+  anim.t=1;anim.box=null;anim.px=player.x;anim.py=player.y;updateHud();beep(260,0.1,"triangle",0.07);
+  toast("Почали спочатку. Передумав? Тисни «Назад»",2800);
+}
+function afterStep(){
+  checkWin();
+  if(!won&&boxes.some(isStuck)&&!stuckShown){stuckShown=true;sfx.stuck();toast("Ой! Коробка застрягла. Натисни «Назад»");moveQueue=[]}
+}
+function checkWin(){
+  if(won)return;
+  if(!boxes.every(b=>goals.has(key(b.x,b.y))))return;
+  won=true;moveQueue=[];stopAllHolds();sfx.win();anim.winStart=performance.now();confetti();hideToast();
+  // знімок значень у момент перемоги
+  const mv=moves,li=levelIdx,hu=hintsUsed,opt=cur.opt||0;
+  const t3=Math.ceil(opt*1.25),t2=opt*2;
+  const stars=opt?(mv<=t3?3:mv<=t2?2:1):0;
+  if(stars){const id=String(li),prev=best[id];
+    if(!prev||stars>prev.stars||(stars===prev.stars&&mv<prev.moves)){best[id]={stars,moves:mv};store.set("robosklad-best2",best)}}
+  winTimer=setTimeout(()=>{
+    winTimer=null;
+    const last=li===LEVELS.length-1;
+    $("winStars").innerHTML=opt?[1,2,3].map(i=>STAR(i<=stars,RM?"":"pop")).join(""):"";
+    if(!RM)[...$("winStars").children].forEach((s,i)=>{s.style.animationDelay=(0.12+i*0.16)+"s";if(i<stars)setTimeout(()=>sfx.star(i),120+i*160)});
+    $("winTitle").textContent=li==="custom"?"Твій рівень пройдено!":last?"Склад підкорено!":["Молодець!","Супер!","Чудово!","Ура!"][li%4];
+    $("winText").textContent=`Ти впорався за ${stepsTxt(mv)}.`+(opt?` Найменше можливо — ${stepsTxt(opt)}.`:"")+(hu?` Підказок: ${hu}.`:"");
+    $("winGoal").textContent=!opt?"Для цього рівня мінімум невідомий, тож без зірок.":stars===3?"Три зірки — ідеально!":
+      `Щоб отримати ${stars===2?"3 зірки":"більше зірок"}, вклади${stars===2?"ся":"ся"} в ${stepsTxt(stars===2?t3:t2)}.`;
+    $("nextBtn").textContent=li==="custom"?"Змінити рівень":last?"Спочатку ▶":"Далі ▶";
+    openOv("winOv");
+  },RM?300:1000);
+}
+
+// ---------- Підказка ----------
+let hintBusy=false,hintWait=false;
+function levelJob(cap){return {W,H,walls:[...walls],goals:[...goals],px:player.x,py:player.y,boxes:boxes.map(b=>({x:b.x,y:b.y})),cap}}
+function hint(){
+  if(won||mode!=="play"||hintBusy)return;
+  if(anim.t<1||moveQueue.length){if(!hintWait){hintWait=true;setTimeout(()=>{hintWait=false;hint()},150)}return}
+  if(boxes.some(isStuck)){toast("Спершу натисни «Назад» — коробка застрягла");sfx.stuck();return}
+  hintBusy=true;const token=stateToken();toast("Робот думає…",0);
+  solveAsync(levelJob(600000)).then(sol=>{
+    hintBusy=false;
+    if(sol===undefined)return;
+    if(token!==stateToken()||won||mode!=="play"){hideToast();return}
+    if(sol===false){toast("Звідси вже не вийде. Натисни «Назад» кілька разів");sfx.stuck();return}
+    if(sol===null){toast("Надто складно для підказки — спробуй «Заново»");return}
+    if(!sol.length){hideToast();return}
+    const d=sol[0];hintsUsed++;sfx.hint();
+    hintArrow={d,until:performance.now()+2400};setDir(d);
+    const btn=document.querySelector(`#pad button[data-d="${d}"]`);btn.classList.remove("glow");void btn.offsetWidth;if(!RM)btn.classList.add("glow");
+    const names={u:"вгору",d:"вниз",l:"вліво",r:"вправо"};
+    toast(`Спробуй ${names[d]}. До перемоги ще ${stepsTxt(sol.length)}.`,2600);
+  });
+}
+
+// ---------- Тост і озвучення ----------
+let toastTimer;
+function toast(msg,ms=2400){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);if(ms)toastTimer=setTimeout(()=>t.classList.remove("show"),ms)}
+function hideToast(){clearTimeout(toastTimer);$("toast").classList.remove("show")}
+function say(msg){const s=$("sr");s.textContent="";setTimeout(()=>s.textContent=msg,30)}
+
+// ---------- Діалоги ----------
+let lastFocus=null;const app=$("app");
+function openOv(id){const o=$(id);if(!document.querySelector(".overlay.show"))lastFocus=document.activeElement;
+  o.classList.add("show");app.inert=true;
+  setTimeout(()=>{const f=o.querySelector("button.primary")||o.querySelector("button");if(f)f.focus({preventScroll:true})},60)}
+function closeOv(id){$(id).classList.remove("show");
+  if(!document.querySelector(".overlay.show")){app.inert=false;if(lastFocus&&lastFocus.focus&&document.contains(lastFocus))lastFocus.focus({preventScroll:true})}}
+
+// ---------- Малювання ----------
+const cv=$("cv");let ctx=cv.getContext("2d");
+const bg=document.createElement("canvas"),bgc=bg.getContext("2d");
+let T=40,dpr=1,PAD=12;
+function withCtx(c,t,fn){const oc=ctx,ot=T;ctx=c;T=t;try{fn()}finally{ctx=oc;T=ot}}
+function resize(){
+  const stage=$("stage");const aw=stage.clientWidth,ah=stage.clientHeight;if(!aw||!ah||!W)return;
+  T=Math.max(16,Math.floor(Math.min(aw/(W+0.7),ah/(H+0.7),80)));PAD=Math.round(T*0.32);dpr=window.devicePixelRatio||1;
+  const cw=W*T+2*PAD,ch=H*T+2*PAD;
+  cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);cv.style.width=cw+"px";cv.style.height=ch+"px";
+  bg.width=cv.width;bg.height=cv.height;
+  if(mode==="play")renderStatic();
+}
+new ResizeObserver(()=>resize()).observe($("stage"));
+
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function rr4(x,y,w,h,a,b,c,d){ctx.beginPath();ctx.moveTo(x+a,y);ctx.lineTo(x+w-b,y);ctx.quadraticCurveTo(x+w,y,x+w,y+b);ctx.lineTo(x+w,y+h-c);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-c,y+h);ctx.lineTo(x+d,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-d);ctx.lineTo(x,y+a);ctx.quadraticCurveTo(x,y,x+a,y);ctx.closePath()}
+const hash=(x,y,s=0)=>{let h=(x*73856093)^(y*19349663)^(s*83492791);h=Math.imul(h^(h>>>13),1274126177);return (h^(h>>>16))>>>0};
+
+// Підлога: теплий бетон із ледь помітними цятками й тінню від стелажа
+function drawFloor(x,y,wf){
+  const px=x*T,py=y*T;
+  ctx.fillStyle=(x+y)%2?"#E9E2D4":"#E4DCCD";ctx.fillRect(px,py,T,T);
+  ctx.fillStyle="rgba(95,72,40,.08)";let h=hash(x,y,7);
+  for(let i=0;i<7;i++){h=Math.imul(h,1103515245)+12345>>>0;const sx=(h%997)/997,sy=((h>>>10)%991)/991,s=Math.max(1,T*(0.02+(h%3)*0.01));ctx.fillRect(px+sx*(T-s),py+sy*(T-s),s,s)}
+  ctx.fillStyle="rgba(95,72,40,.07)";ctx.fillRect(px,py,T,Math.max(1,T*0.02));ctx.fillRect(px,py,Math.max(1,T*0.02),T);
+  if(wf&&wf(x,y-1)){const g=ctx.createLinearGradient(0,py,0,py+T*0.22);g.addColorStop(0,"rgba(40,40,40,.18)");g.addColorStop(1,"rgba(40,40,40,0)");ctx.fillStyle=g;ctx.fillRect(px,py,T,T*0.22)}
+}
+// Стіни: спокійні бетонні блоки — світла верхня грань, темніша передня, ледь помітні шви
+function drawWall(x,y,wf,ff){
+  const px=x*T,py=y*T,up=wf(x,y-1),dn=wf(x,y+1),lf=wf(x-1,y),rt=wf(x+1,y),r=T*0.14;
+  const tl=!up&&!lf?r:0,tr=!up&&!rt?r:0,br=!dn&&!rt?r:0,bl=!dn&&!lf?r:0;
+  const lip=dn?0:T*0.24,fh=T-lip;
+  // передня грань (видно лише там, де під стіною підлога)
+  let g=ctx.createLinearGradient(0,py+fh,0,py+T);g.addColorStop(0,"#868C94");g.addColorStop(1,"#6F757E");
+  ctx.fillStyle=g;rr4(px,py,T,T,tl,tr,br,bl);ctx.fill();
+  // верхня грань
+  g=ctx.createLinearGradient(0,py,0,py+T);g.addColorStop(0,"#C3C7CC");g.addColorStop(1,"#B3B8BE");
+  ctx.fillStyle=g;rr4(px,py,T,fh,tl,tr,0,0);ctx.fill();
+  ctx.save();rr4(px,py,T,fh,tl,tr,0,0);ctx.clip();
+  // м'які фаски по відкритих краях
+  const bv=Math.max(1.5,T*0.05);
+  if(!up){ctx.fillStyle="rgba(255,255,255,.45)";ctx.fillRect(px,py,T,bv)}
+  if(!lf){ctx.fillStyle="rgba(255,255,255,.3)";ctx.fillRect(px,py,bv,fh)}
+  if(!rt){ctx.fillStyle="rgba(40,48,60,.10)";ctx.fillRect(px+T-bv,py,bv,fh)}
+  // шви між сусідніми блоками
+  ctx.fillStyle="rgba(50,58,70,.18)";const sw=Math.max(1,T*0.022);
+  if(lf)ctx.fillRect(px,py,sw,fh);
+  if(up)ctx.fillRect(px,py,T,sw);
+  ctx.restore();
+  if(!dn&&lf){ctx.fillStyle="rgba(60,50,35,.18)";ctx.fillRect(px,py+fh,Math.max(1,T*0.022),lip)}
+  // тонка лінія на стику верхньої й передньої граней
+  if(!dn){ctx.fillStyle="rgba(60,50,35,.22)";ctx.fillRect(px+bl*0.4,py+fh,T-(bl+br)*0.4,Math.max(1,T*0.02))}
+}
+// Ціль: жовта розмітка «зона доставки»
+function drawGoal(x,y,time,covered){
+  const px=x*T,py=y*T,p=RM?0.6:0.5+0.5*Math.sin(time/450+x*1.3+y);
+  if(!covered){
+    ctx.fillStyle=`rgba(255,196,40,${0.22+0.16*p})`;ctx.fillRect(px+T*0.1,py+T*0.1,T*0.8,T*0.8);
+    ctx.save();ctx.setLineDash([T*0.09,T*0.07]);ctx.strokeStyle="rgba(150,100,0,.6)";ctx.lineWidth=Math.max(1,T*0.035);
+    ctx.strokeRect(px+T*0.24,py+T*0.24,T*0.52,T*0.52);ctx.restore();
+  }
+  const i=T*0.04,L=T*0.24,lw=Math.max(2.5,T*0.075);
+  const path=()=>{ctx.beginPath();
+    ctx.moveTo(px+i,py+i+L);ctx.lineTo(px+i,py+i);ctx.lineTo(px+i+L,py+i);
+    ctx.moveTo(px+T-i-L,py+i);ctx.lineTo(px+T-i,py+i);ctx.lineTo(px+T-i,py+i+L);
+    ctx.moveTo(px+T-i,py+T-i-L);ctx.lineTo(px+T-i,py+T-i);ctx.lineTo(px+T-i-L,py+T-i);
+    ctx.moveTo(px+i+L,py+T-i);ctx.lineTo(px+i,py+T-i);ctx.lineTo(px+i,py+T-i-L);};
+  ctx.lineCap="square";ctx.lineJoin="miter";
+  path();ctx.strokeStyle="rgba(34,48,63,.6)";ctx.lineWidth=lw+2;ctx.stroke();
+  path();ctx.strokeStyle=covered?"#FFC93C":`rgb(255,${190+Math.round(20*p)},40)`;ctx.lineWidth=lw;ctx.stroke();
+  ctx.lineCap="butt";
+}
+function tick(cx,cy,s,col){ctx.strokeStyle=col;ctx.lineWidth=Math.max(2,s*0.3);ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.beginPath();ctx.moveTo(cx-s*0.45,cy);ctx.lineTo(cx-s*0.1,cy+s*0.35);ctx.lineTo(cx+s*0.5,cy-s*0.35);ctx.stroke();ctx.lineCap="butt"}
+// Коробка з картону; на місці — зелений скотч і зелений значок-галочка
+function drawBox(fx,fy,onGoal){
+  const px=fx*T,py=fy*T,m=T*0.11,s=T-2*m,r=T*0.07;
+  ctx.fillStyle="rgba(60,40,15,.25)";rr(px+m+T*0.02,py+m+T*0.07,s,s,r);ctx.fill();
+  const g=ctx.createLinearGradient(px,py,px+T,py+T);
+  g.addColorStop(0,onGoal?"#EDBB7C":"#E1A764");g.addColorStop(1,onGoal?"#D2954F":"#C2823E");
+  ctx.fillStyle=g;rr(px+m,py+m,s,s,r);ctx.fill();
+  ctx.strokeStyle="#8A5523";ctx.lineWidth=Math.max(1.5,T*0.04);rr(px+m,py+m,s,s,r);ctx.stroke();
+  ctx.strokeStyle="rgba(120,70,20,.4)";ctx.lineWidth=Math.max(1,T*0.02);
+  ctx.beginPath();ctx.moveTo(px+m,py+T/2);ctx.lineTo(px+T-m,py+T/2);ctx.stroke();
+  ctx.fillStyle=onGoal?"#1A9E70":"rgba(255,238,205,.75)";ctx.fillRect(px+T/2-T*0.075,py+m,T*0.15,s);
+  // позначка «верх»
+  ctx.strokeStyle="rgba(90,50,15,.5)";ctx.lineWidth=Math.max(1,T*0.025);
+  for(const ox of[0.22,0.3]){ctx.beginPath();ctx.moveTo(px+T*ox-T*0.035,py+T*0.76);ctx.lineTo(px+T*ox,py+T*0.7);ctx.lineTo(px+T*ox+T*0.035,py+T*0.76);ctx.stroke()}
+  if(onGoal){const cx=px+T*0.76,cy=py+T*0.26,rad=T*0.16;
+    ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(cx,cy,rad+Math.max(1.5,T*0.03),0,7);ctx.fill();
+    ctx.fillStyle="#1A9E70";ctx.beginPath();ctx.arc(cx,cy,rad,0,7);ctx.fill();tick(cx,cy+T*0.01,rad*0.9,"#fff")}
+}
+// Робот: вигляд зверху, у локальних координатах дивиться «вгору»
+let blinkUntil=0,nextBlink=1500;
+function drawRobot(fx,fy,angle,time,happy){
+  const cx=fx*T+T/2,cy=fy*T+T/2,s=T;
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(angle);
+  ctx.fillStyle="rgba(30,25,15,.22)";rr(-s*0.42+s*0.02,-s*0.4+s*0.06,s*0.84,s*0.82,s*0.14);ctx.fill();
+  for(const side of[-1,1]){
+    const tx=side*s*0.33-s*0.1;
+    ctx.fillStyle="#4a5568";rr(tx,-s*0.4,s*0.2,s*0.8,s*0.08);ctx.fill();
+    ctx.fillStyle="#2d3748";rr(tx+s*0.03,-s*0.37,s*0.14,s*0.74,s*0.05);ctx.fill();
+    ctx.save();rr(tx+s*0.03,-s*0.37,s*0.14,s*0.74,s*0.05);ctx.clip();
+    ctx.strokeStyle="#718096";ctx.lineWidth=Math.max(1,s*0.03);
+    const off=(anim.tread*s)%(s*0.1);
+    for(let yy=-s*0.5+off;yy<s*0.5;yy+=s*0.1){ctx.beginPath();ctx.moveTo(tx+s*0.03,yy);ctx.lineTo(tx+s*0.17,yy);ctx.stroke()}
+    ctx.restore();
+    ctx.save();ctx.shadowColor="#5ec8ff";ctx.shadowBlur=s*0.15;ctx.fillStyle="#7fd6ff";
+    rr(tx+s*0.05,-s*0.42,s*0.1,s*0.05,s*0.02);ctx.fill();rr(tx+s*0.05,s*0.37,s*0.1,s*0.05,s*0.02);ctx.fill();ctx.restore();
+  }
+  const ext=s*(0.02+0.12*anim.push);
+  for(const side of[-1,1]){
+    const ax=side*s*0.2;
+    ctx.fillStyle="#a0aec0";rr(ax-s*0.04,-s*0.3-ext,s*0.08,s*0.18+ext,s*0.03);ctx.fill();
+    ctx.strokeStyle="#718096";ctx.lineWidth=Math.max(1.5,s*0.035);ctx.lineCap="round";
+    ctx.beginPath();ctx.moveTo(ax-s*0.05,-s*0.32-ext);ctx.lineTo(ax-s*0.06,-s*0.4-ext);ctx.moveTo(ax+s*0.05,-s*0.32-ext);ctx.lineTo(ax+s*0.06,-s*0.4-ext);ctx.stroke();
+    ctx.lineCap="butt";
+  }
+  let grd=ctx.createLinearGradient(-s*0.25,-s*0.3,s*0.25,s*0.3);grd.addColorStop(0,"#ffffff");grd.addColorStop(1,"#d5dde8");
+  ctx.fillStyle=grd;rr(-s*0.25,-s*0.22,s*0.5,s*0.56,s*0.1);ctx.fill();
+  ctx.strokeStyle="#b8c4d4";ctx.lineWidth=1;ctx.stroke();
+  ctx.strokeStyle="#9aa8bb";ctx.lineWidth=Math.max(1,s*0.025);
+  for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(-s*0.12,s*0.2+i*s*0.04);ctx.lineTo(s*0.12,s*0.2+i*s*0.04);ctx.stroke()}
+  grd=ctx.createRadialGradient(-s*0.1,-s*0.22,s*0.02,0,-s*0.1,s*0.4);grd.addColorStop(0,"#ffffff");grd.addColorStop(1,"#d9e1eb");
+  ctx.fillStyle=grd;rr(-s*0.28,-s*0.36,s*0.56,s*0.46,s*0.12);ctx.fill();
+  ctx.strokeStyle="#aebbcc";ctx.lineWidth=Math.max(1,s*0.025);ctx.stroke();
+  const blink=time<blinkUntil&&!happy;
+  for(const side of[-1,1]){
+    const ex=side*s*0.12,ey=-s*0.3;
+    if(happy){ctx.strokeStyle="#1a2433";ctx.lineWidth=Math.max(1.5,s*0.035);ctx.lineCap="round";ctx.beginPath();ctx.arc(ex,ey+s*0.02,s*0.05,Math.PI*1.1,Math.PI*1.9);ctx.stroke();ctx.lineCap="butt"}
+    else if(blink){ctx.strokeStyle="#1a2433";ctx.lineWidth=Math.max(1.5,s*0.03);ctx.beginPath();ctx.moveTo(ex-s*0.05,ey);ctx.lineTo(ex+s*0.05,ey);ctx.stroke()}
+    else{
+      ctx.fillStyle="#1a2433";ctx.beginPath();ctx.ellipse(ex,ey,s*0.06,s*0.045,0,0,7);ctx.fill();
+      ctx.fillStyle="#3aa0ff";ctx.beginPath();ctx.ellipse(ex,ey-s*0.005,s*0.035,s*0.028,0,0,7);ctx.fill();
+      ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(ex-s*0.015,ey-s*0.015,s*0.012,0,7);ctx.fill();
+    }
+  }
+  const bob=RM?0:Math.sin(time/250)*s*0.008;
+  for(const side of[-1,1]){
+    const ax=side*s*0.13,ay=-s*0.08;
+    ctx.fillStyle="#8a98ab";ctx.beginPath();ctx.arc(ax,ay,s*0.04,0,7);ctx.fill();
+    ctx.save();ctx.shadowColor="#4db8ff";ctx.shadowBlur=s*0.18;
+    ctx.fillStyle="#2f8cff";ctx.beginPath();ctx.arc(ax+bob,ay-s*0.015,s*0.045,0,7);ctx.fill();ctx.restore();
+    ctx.fillStyle="rgba(255,255,255,.8)";ctx.beginPath();ctx.arc(ax+bob-s*0.012,ay-s*0.03,s*0.013,0,7);ctx.fill();
+  }
+  ctx.restore();
+}
+function drawStuckMark(b,time){
+  const cx=b.x*T+T/2,cy=b.y*T+T/2,p=RM?1:0.5+0.5*Math.sin(time/150);
+  ctx.save();ctx.strokeStyle=`rgba(225,40,60,${0.55+0.45*p})`;ctx.lineWidth=T*0.07;rr(b.x*T+T*0.07,b.y*T+T*0.07,T*0.86,T*0.86,T*0.1);ctx.stroke();
+  const bx=cx+T*0.3,by=cy-T*0.3,rad=T*0.16;
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(bx,by,rad+Math.max(1.5,T*0.03),0,7);ctx.fill();
+  ctx.fillStyle="#E1283C";ctx.beginPath();ctx.arc(bx,by,rad,0,7);ctx.fill();
+  ctx.fillStyle="#fff";rr(bx-rad*0.16,by-rad*0.62,rad*0.32,rad*0.8,rad*0.12);ctx.fill();ctx.beginPath();ctx.arc(bx,by+rad*0.5,rad*0.17,0,7);ctx.fill();ctx.restore();
+}
+function drawTracks(now){
+  for(const tr of tracks){const age=(now-tr.t)/1400;if(age>1)continue;
+    ctx.save();ctx.translate(tr.x*T+T/2,tr.y*T+T/2);ctx.rotate(tr.a);ctx.globalAlpha=0.22*(1-age);ctx.fillStyle="#6B5A44";
+    for(const side of[-1,1])for(let k=-2;k<=2;k++)ctx.fillRect(side*T*0.33-T*0.07,k*T*0.15-T*0.025,T*0.14,T*0.05);
+    ctx.restore();}
+}
+function drawHintArrow(now){
+  if(!hintArrow||now>hintArrow.until)return;
+  const [dx,dy]=DIRS[hintArrow.d],p=RM?0.3:(now/650)%1;
+  const cx=(anim.px+dx*(0.5+p*0.22))*T+T/2,cy=(anim.py+dy*(0.5+p*0.22))*T+T/2;
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(ANG[hintArrow.d]);ctx.globalAlpha=1-0.45*p;
+  ctx.beginPath();ctx.moveTo(0,-T*0.3);ctx.lineTo(T*0.26,T*0.02);ctx.lineTo(T*0.1,T*0.02);ctx.lineTo(T*0.1,T*0.26);ctx.lineTo(-T*0.1,T*0.26);ctx.lineTo(-T*0.1,T*0.02);ctx.lineTo(-T*0.26,T*0.02);ctx.closePath();
+  ctx.lineJoin="round";ctx.lineWidth=Math.max(3,T*0.07);ctx.strokeStyle="#22303F";ctx.stroke();ctx.fillStyle="#FFC93C";ctx.fill();
+  ctx.restore();
+}
+// Нерухома частина поля малюється один раз на окреме полотно (з м'якою тінню під формою складу)
+function renderStatic(){
+  const wf=(x,y)=>walls.has(key(x,y)),ff=(x,y)=>inside.has(key(x,y));
+  withCtx(bgc,T,()=>{
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,bg.width,bg.height);ctx.setTransform(dpr,0,0,dpr,PAD*dpr,PAD*dpr);
+    // тінь малюємо від фігури, винесеної далеко за межі полотна, — видно лише саму тінь
+    const OFF=10000;ctx.save();ctx.shadowColor="rgba(70,50,20,.34)";ctx.shadowBlur=T*0.45*dpr;ctx.shadowOffsetX=OFF*dpr;ctx.shadowOffsetY=T*0.14*dpr;ctx.fillStyle="#000";
+    ctx.beginPath();const cellR=(x,y)=>ctx.rect(x*T-OFF+T*0.08,y*T+T*0.08,T*0.84,T*0.84);
+    inside.forEach(k=>{const [x,y]=k.split(",").map(Number);ctx.rect(x*T-OFF,y*T,T,T)});walls.forEach(k=>{const [x,y]=k.split(",").map(Number);cellR(x,y)});ctx.fill();ctx.restore();
+    inside.forEach(k=>{const [x,y]=k.split(",").map(Number);drawFloor(x,y,wf)});
+    walls.forEach(k=>{const [x,y]=k.split(",").map(Number);drawWall(x,y,wf,ff)});
+  });
+}
+
+// Конфеті — на окремому полотні на весь екран
+const fx=$("fx"),fxc=fx.getContext("2d");let parts=[];
+function confetti(){
+  if(RM)return;
+  const r=cv.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  const cols=["#FFC93C","#E2552B","#1A9E70","#2F8CFF","#C98A45","#22303F"];
+  for(let i=0;i<120;i++)parts.push({x:cx,y:cy,vx:(Math.random()-.5)*14,vy:-Math.random()*13-3,r:Math.random()*6.28,vr:(Math.random()-.5)*0.4,c:cols[i%cols.length],life:1,w:6+Math.random()*6});
+}
+function drawFx(dt){
+  const d=window.devicePixelRatio||1,w=innerWidth,h=innerHeight;
+  if(fx.width!==Math.round(w*d)||fx.height!==Math.round(h*d)){fx.width=Math.round(w*d);fx.height=Math.round(h*d)}
+  fxc.setTransform(d,0,0,d,0,0);fxc.clearRect(0,0,w,h);if(!parts.length)return;
+  const k=dt/16.7;
+  for(const p of parts){p.x+=p.vx*k;p.y+=p.vy*k;p.vy+=0.32*k;p.vx*=Math.pow(0.99,k);p.r+=p.vr*k;p.life-=0.006*k;
+    fxc.save();fxc.globalAlpha=Math.max(0,Math.min(1,p.life*1.5));fxc.translate(p.x,p.y);fxc.rotate(p.r);fxc.fillStyle=p.c;fxc.fillRect(-p.w/2,-p.w/4,p.w,p.w/2);fxc.restore()}
+  parts=parts.filter(p=>p.life>0&&p.y<h+30);
+}
+
+let last=performance.now(),fxDirty=false;
+function frame(now){
+  const dt=Math.min(50,now-last);last=now;
+  const hadFx=parts.length>0;if(hadFx||fxDirty)drawFx(dt);fxDirty=hadFx;
+  if(now>nextBlink){blinkUntil=now+140;nextBlink=now+1800+Math.random()*2600}
+  if(mode==="edit"){drawEditor(now);requestAnimationFrame(frame);return}
+  if(!W){requestAnimationFrame(frame);return}
+  if(anim.t<1){
+    anim.t=Math.min(1,(now-anim.start)/STEP_MS);const e=1-Math.pow(1-anim.t,2);
+    anim.px=anim.fromX+(player.x-anim.fromX)*e;anim.py=anim.fromY+(player.y-anim.fromY)*e;anim.tread+=dt/STEP_MS*0.9;
+    if(anim.t>=1){anim.box=null;afterStep();if(moveQueue.length&&!won)tryMove(moveQueue.shift(),true)}
+  }else{anim.px=player.x;anim.py=player.y;if(moveQueue.length&&!won)tryMove(moveQueue.shift(),true)}
+  anim.angle+=(anim.targetAngle-anim.angle)*Math.min(1,dt/60);
+  anim.push=Math.max(0,anim.push-dt/260);
+
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.drawImage(bg,0,0);
+  ctx.setTransform(dpr,0,0,dpr,PAD*dpr,PAD*dpr);
+  drawTracks(now);
+  const e=anim.t<1?1-Math.pow(1-anim.t,2):1;
+  const movingBox=anim.box&&anim.t<1?anim.box:null;
+  goals.forEach(k=>{const [x,y]=k.split(",").map(Number);const b=boxAt(x,y);drawGoal(x,y,now,b&&b!==movingBox)});
+  for(const b of boxes){
+    const moving=b===movingBox;let fx2=b.x,fy2=b.y;
+    if(moving){fx2=anim.bfx+(b.x-anim.bfx)*e;fy2=anim.bfy+(b.y-anim.bfy)*e}
+    drawBox(fx2,fy2,goals.has(key(b.x,b.y))&&!moving);
+    if(!moving&&isStuck(b))drawStuckMark(b,now);
+  }
+  drawHintArrow(now);
+  let spin=0,hop=1;
+  if(anim.winStart&&!RM){const w=Math.min(1,(now-anim.winStart)/900);spin=Math.PI*2*(1-Math.pow(1-w,3));hop=1+0.15*Math.sin(w*Math.PI*3)*(1-w)}
+  const rx=anim.px*T+T/2,ry=anim.py*T+T/2;
+  ctx.save();ctx.translate(rx,ry);ctx.scale(hop,hop);ctx.translate(-rx,-ry);
+  drawRobot(anim.px,anim.py,anim.angle+spin,now,!!anim.winStart);ctx.restore();
+  requestAnimationFrame(frame);
+}
+
+// ---------- Редактор ----------
+const EW=9,EH=9;let grid=null,tool="#",painting=false,lastPaint=null,editReturn=0,checking=false;
+function emptyGrid(){return Array.from({length:EH},()=>Array(EW).fill(" "))}
+function openEditor(){
+  haltEverything();closeOv("menuOv");
+  editReturn=levelIdx;mode="edit";setModeUI();
+  if(!grid){
+    if(customLevel&&customLevel.grid)grid=customLevel.grid.map(r=>r.split(""));
+    else{grid=emptyGrid();grid[4][2]="@";grid[4][4]="$";grid[4][6]=".";}
+  }
+  W=EW+2;H=EH+2;resize();
+  $("lvlName").textContent="Редактор рівня";
+  toast("Потрібен 1 робот і стільки ж цілей, скільки коробок (до 6)",3200);
+}
+function setModeUI(){document.body.classList.toggle("edit",mode==="edit")}
+function paintCell(cx,cy){
+  if(cx<0||cy<0||cx>=EW||cy>=EH)return;
+  const c=grid[cy][cx];let n=c;
+  const onGoal=c==="."||c==="*"||c==="+",isRobot=c==="@"||c==="+";
+  if(tool==="#")n=isRobot?c:"#";
+  else if(tool===" ")n=" ";
+  else if(tool==="$")n=isRobot?c:onGoal?"*":"$";
+  else if(tool===".")n=onGoal?c:c==="$"?"*":c==="@"?"+":".";
+  else if(tool==="@"){
+    for(let y=0;y<EH;y++)for(let x=0;x<EW;x++){if(grid[y][x]==="@")grid[y][x]=" ";if(grid[y][x]==="+")grid[y][x]="."}
+    n=onGoal?"+":"@";
+  }
+  if(n!==c){grid[cy][cx]=n;beep(tool==="#"?200:tool===" "?160:600,0.04,"triangle",0.05)}
+}
+function drawEditor(now){
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.setTransform(dpr,0,0,dpr,PAD*dpr,PAD*dpr);
+  const cell=(x,y)=>(x<0||y<0||x>=W||y>=H)?null:(x===0||y===0||x===W-1||y===H-1)?"#":grid[y-1][x-1];
+  const wf=(x,y)=>cell(x,y)==="#",ff=(x,y)=>{const c=cell(x,y);return c!==null&&c!=="#"};
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const c=cell(x,y);
+    if(c==="#"){drawWall(x,y,wf,ff);continue}
+    drawFloor(x,y,wf);
+    if(c==="."||c==="*"||c==="+")drawGoal(x,y,now,c==="*");
+    if(c==="$"||c==="*")drawBox(x,y,c==="*");
+    if(c==="@"||c==="+")drawRobot(x,y,0,now,false);
+  }
+  ctx.strokeStyle="rgba(34,48,63,.08)";ctx.lineWidth=1;
+  for(let x=1;x<W;x++){ctx.beginPath();ctx.moveTo(x*T,T);ctx.lineTo(x*T,(H-1)*T);ctx.stroke()}
+  for(let y=1;y<H;y++){ctx.beginPath();ctx.moveTo(T,y*T);ctx.lineTo((W-1)*T,y*T);ctx.stroke()}
+}
+function playCustom(){
+  if(checking)return;
+  let robots=0,bx=0,gl=0;
+  grid.forEach(r=>r.forEach(c=>{if(c==="@"||c==="+")robots++;if(c==="$"||c==="*")bx++;if(c==="."||c==="*"||c==="+")gl++}));
+  if(robots!==1){toast("Постав робота на поле");return}
+  if(bx===0){toast("Додай хоча б одну коробку");return}
+  if(bx!==gl){toast(`Коробок ${bx}, а цілей ${gl} — має бути порівну`);return}
+  if(bx>6){toast("Забагато коробок — максимум 6");return}
+  const map=["#".repeat(EW+2),...grid.map(r=>"#"+r.join("")+"#"),"#".repeat(EW+2)];
+  const m=parseMap(map);
+  checking=true;$("playEdit").disabled=true;toast("Перевіряю, чи можна пройти…",0);
+  solveAsync({W:m.W,H:m.H,walls:[...m.walls],goals:[...m.goals],px:m.player.x,py:m.player.y,boxes:m.boxes.map(b=>({x:b.x,y:b.y})),cap:700000}).then(s=>{
+    checking=false;$("playEdit").disabled=false;
+    if(s===undefined||mode!=="edit")return;
+    if(s===false){toast("Цей рівень пройти неможливо. Спробуй посунути стіни чи коробки",3400);sfx.stuck();return}
+    if(s===""){toast("Усі коробки вже на місці — це надто просто");return}
+    const opt=s===null?0:s.length;
+    customLevel={map,opt,grid:grid.map(r=>r.join(""))};store.set("robosklad-custom",customLevel);
+    delete best["custom"];store.set("robosklad-best2",best);
+    loadLevel("custom");
+    toast(s===null?"Рівень великий — перевірити не встиг, тож без зірок. Але грати можна!":`Рівень проходиться! Найменше — ${stepsTxt(opt)}`,3000);
+  });
+}
+document.querySelectorAll("#tools button").forEach(b=>b.onclick=()=>{
+  tool=b.dataset.t;document.querySelectorAll("#tools button").forEach(o=>o.setAttribute("aria-pressed",String(o===b)))});
+$("clearBtn").onclick=()=>{grid=emptyGrid();grid[4][4]="@";beep(180,0.1,"triangle",0.06);toast("Поле очищено")};
+$("exitEdit").onclick=()=>{cancelSolves();loadLevel(editReturn==="custom"&&!customLevel?0:editReturn)};
+$("playEdit").onclick=playCustom;
+$("openEditor").onclick=openEditor;
+
+// ---------- Керування ----------
+const KEYS={ArrowUp:"u",ArrowDown:"d",ArrowLeft:"l",ArrowRight:"r",KeyW:"u",KeyS:"d",KeyA:"l",KeyD:"r"};
+document.addEventListener("keydown",e=>{
+  const ov=document.querySelector(".overlay.show");
+  if(ov){if(e.key==="Escape"&&ov.id!=="winOv"){e.preventDefault();ov.id==="tutOv"?finishTut():closeOv(ov.id)}return}
+  if(mode!=="play"||e.ctrlKey||e.metaKey||e.altKey)return;
+  const onBtn=e.target&&e.target.closest&&e.target.closest("button");
+  if(onBtn&&(e.key===" "||e.key==="Enter"))return;
+  const m=KEYS[e.code]||KEYS[e.key];
+  if(m){e.preventDefault();tryMove(m);return}
+  if(e.code==="KeyZ"||e.code==="Backspace"){e.preventDefault();undo()}
+  else if(e.code==="KeyR"){reset()}
+  else if(e.code==="KeyH"){hint()}
+});
+function cellFromEvent(e){const r=cv.getBoundingClientRect();return [Math.floor((e.clientX-r.left-PAD)/T),Math.floor((e.clientY-r.top-PAD)/T)]}
+const stage=$("stage");let sx=null,sy=null,swiped=false;
+stage.addEventListener("pointerdown",e=>{
+  sx=e.clientX;sy=e.clientY;swiped=false;
+  if(mode==="edit"){painting=true;const [x,y]=cellFromEvent(e);lastPaint=x+","+y;paintCell(x-1,y-1)}
+});
+stage.addEventListener("pointermove",e=>{
+  if(mode==="edit"){if(!painting)return;const [x,y]=cellFromEvent(e);const k=x+","+y;if(k!==lastPaint){lastPaint=k;if(tool!=="@")paintCell(x-1,y-1)}return}
+  if(sx==null)return;const dx=e.clientX-sx,dy=e.clientY-sy,th=26;
+  if(Math.abs(dx)>th||Math.abs(dy)>th){moveQueue=[];tryMove(Math.abs(dx)>Math.abs(dy)?(dx>0?"r":"l"):(dy>0?"d":"u"));sx=e.clientX;sy=e.clientY;swiped=true}
+});
+stage.addEventListener("pointerup",e=>{
+  if(mode==="edit"){painting=false;return}
+  if(sx!=null&&!swiped&&e.target===cv)tapTo(...cellFromEvent(e));
+  sx=sy=null;
+});
+["pointercancel","pointerleave"].forEach(ev=>stage.addEventListener(ev,()=>{sx=sy=null;painting=false}));
+function tapTo(tx,ty){
+  if(won||mode!=="play")return;
+  const k=key(tx,ty);if(!inside.has(k))return;
+  const dx=tx-player.x,dy=ty-player.y;
+  if(Math.abs(dx)+Math.abs(dy)===1&&boxAt(tx,ty)){moveQueue=[];tryMove(dx===1?"r":dx===-1?"l":dy===1?"d":"u");return}
+  if(boxAt(tx,ty))return;
+  const prev=new Map([[key(player.x,player.y),null]]),q=[[player.x,player.y]];
+  while(q.length){const [x,y]=q.shift();if(x===tx&&y===ty)break;
+    for(const [d,[ddx,ddy]] of Object.entries(DIRS)){const nx=x+ddx,ny=y+ddy,nk=key(nx,ny);
+      if(prev.has(nk)||!inside.has(nk)||boxAt(nx,ny))continue;prev.set(nk,[key(x,y),d]);q.push([nx,ny])}}
+  if(!prev.has(k)){sfx.bump();return}
+  const path=[];let c=k;while(prev.get(c)){const [p,d]=prev.get(c);path.unshift(d);c=p}
+  moveQueue=path;
+}
+// Утримання кнопки = повтор. Таймери завжди зупиняються перед новим натисканням (без «залипання»).
+const holds=[];
+function stopAllHolds(){holds.forEach(f=>f())}
+function holdRepeat(b,fn,interval){
+  let t1=null,t2=null;
+  const stop=()=>{clearTimeout(t1);clearInterval(t2);t1=t2=null;b.classList.remove("on")};holds.push(stop);
+  b.addEventListener("pointerdown",e=>{if(e.button>0)return;e.preventDefault();stop();try{b.setPointerCapture(e.pointerId)}catch(_){}
+    b.classList.add("on");fn();t1=setTimeout(()=>{t2=setInterval(fn,interval)},320)});
+  ["pointerup","pointercancel","lostpointercapture"].forEach(ev=>b.addEventListener(ev,stop));
+  b.addEventListener("click",e=>{if(e.detail===0)fn()}); // Enter/Пробіл з клавіатури та екранні читачі
+}
+document.querySelectorAll("#pad button").forEach(b=>holdRepeat(b,()=>{moveQueue=[];tryMove(b.dataset.d)},STEP_MS+20));
+holdRepeat($("undoBtn"),undo,170);
+$("hintBtn").onclick=hint;
+$("resetBtn").onclick=reset;
+$("againBtn").onclick=()=>{closeOv("winOv");loadLevel(levelIdx)};
+$("nextBtn").onclick=()=>{closeOv("winOv");if(levelIdx==="custom")openEditor();else loadLevel(levelIdx+1)};
+const soundBtn=$("soundBtn");
+const SND_ON='<svg class="i" viewBox="0 0 24 24"><path d="M4 9.5v5h4l5 4v-13l-5 4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+const SND_OFF='<svg class="i" viewBox="0 0 24 24"><path d="M4 9.5v5h4l5 4v-13l-5 4z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>';
+const paintSound=()=>{soundBtn.innerHTML=soundOn?SND_ON:SND_OFF;soundBtn.setAttribute("aria-pressed",String(soundOn))};paintSound();
+soundBtn.onclick=()=>{soundOn=!soundOn;store.set("robosklad-sound",soundOn);paintSound();if(soundOn)sfx.goal()};
+function openMenu(){
+  const box=$("levels");box.innerHTML="";let total=0;
+  const tile=(label,st,cls,aria,go)=>{const b=document.createElement("button");
+    b.innerHTML=`<b>${label}</b><span class="st">${[1,2,3].map(i=>STAR(i<=st,"",true)).join("")}</span>`;b.className=cls;b.setAttribute("aria-label",aria);
+    b.onclick=()=>{closeOv("menuOv");go()};box.appendChild(b)};
+  LEVELS.forEach((_,i)=>{const st=best[i]?best[i].stars:0;total+=st;
+    tile(i+1,st,(i===levelIdx?"cur ":"")+(st?"done":""),`Рівень ${i+1}, ${st} ${plural(st,["зірка","зірки","зірок"])} з 3`,()=>loadLevel(i))});
+  if(customLevel){const st=best.custom?best.custom.stars:0;
+    tile("✎",st,(levelIdx==="custom"?"cur ":"")+(st?"done":""),"Мій рівень",()=>loadLevel("custom"))}
+  $("progress").textContent=`Зібрано зірок: ${total} з ${LEVELS.length*3}`;
+  openOv("menuOv");
+}
+$("menuBtn").onclick=openMenu;
+$("closeMenu").onclick=()=>closeOv("menuOv");
+$("howBtn").onclick=()=>{closeOv("menuOv");showTut()};
+
+// ---------- Іконки, логотип, навчання ----------
+function iconCanvas(c,size,fn){const d=window.devicePixelRatio||1;c.width=size*d;c.height=size*d;const g=c.getContext("2d");g.setTransform(d,0,0,d,0,0);withCtx(g,size,fn)}
+function paintIcons(){
+  iconCanvas($("logo"),40,()=>{ctx.fillStyle="#FFC93C";rr(0,0,40,40,12);ctx.fill();ctx.save();ctx.beginPath();rr(0,0,40,40,12);ctx.clip();
+    ctx.fillStyle="#22303F";for(let i=-40;i<80;i+=10){ctx.beginPath();ctx.moveTo(i,40);ctx.lineTo(i+5,40);ctx.lineTo(i+11,34);ctx.lineTo(i+6,34);ctx.closePath();ctx.fill()}ctx.restore();
+    ctx.save();ctx.translate(2,1);ctx.scale(0.9,0.9);drawRobot(0,0,0,0,true);ctx.restore()});
+  const draws={"#":()=>drawWall(0,0,()=>false,()=>true),"$":()=>drawBox(0,0,false),".":()=>{drawFloor(0,0);drawGoal(0,0,0,false)},
+    "@":()=>{drawFloor(0,0);drawRobot(0,0,0,0,false)},
+    " ":()=>{drawFloor(0,0);ctx.strokeStyle="#E1283C";ctx.lineWidth=3;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(9,9);ctx.lineTo(21,21);ctx.moveTo(21,9);ctx.lineTo(9,21);ctx.stroke();ctx.lineCap="butt"}};
+  document.querySelectorAll("#tools button").forEach(b=>iconCanvas(b.querySelector("canvas"),30,draws[b.dataset.t]));
+  // Сцена для навчання: робот → коробка → зона доставки
+  const s=$("tutScene"),cs=56,cols=5;const d=window.devicePixelRatio||1;s.width=cols*cs*d;s.height=cs*d;
+  const g=s.getContext("2d");g.setTransform(d,0,0,d,0,0);
+  withCtx(g,cs,()=>{for(let x=0;x<cols;x++)drawFloor(x,0);drawGoal(4,0,0,false);drawBox(2,0,false);drawRobot(1,0,Math.PI/2,0,false);
+    ctx.save();ctx.translate(3*cs+cs/2,cs/2);ctx.rotate(Math.PI/2);ctx.globalAlpha=.9;
+    ctx.beginPath();ctx.moveTo(0,-cs*0.22);ctx.lineTo(cs*0.2,0);ctx.lineTo(cs*0.08,0);ctx.lineTo(cs*0.08,cs*0.2);ctx.lineTo(-cs*0.08,cs*0.2);ctx.lineTo(-cs*0.08,0);ctx.lineTo(-cs*0.2,0);ctx.closePath();
+    ctx.lineJoin="round";ctx.lineWidth=3;ctx.strokeStyle="#22303F";ctx.stroke();ctx.fillStyle="#FFC93C";ctx.fill();ctx.restore()});
+}
+function showTut(){openOv("tutOv")}
+function finishTut(){store.set("robosklad-tut",true);closeOv("tutOv")}
+$("tutGo").onclick=finishTut;
+
+paintIcons();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>resize());
+loadLevel(0);
+if(!store.get("robosklad-tut",false))setTimeout(showTut,250);
+requestAnimationFrame(frame);
+
+// ---------- Офлайн-режим (PWA) ----------
+if("serviceWorker" in navigator&&location.protocol!=="file:"){
+  addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+  let hadController=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadController)toast("Гру оновлено — нова версія запрацює після перезапуску",3500);hadController=true});
+}
+</script>
+</body>
+</html>
