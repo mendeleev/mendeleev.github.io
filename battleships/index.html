@@ -206,6 +206,10 @@ body.paper .seg2,body.paper .sw{background:#f1ede0}
 .fleet .chip.next{outline:3px solid var(--accent);background:#fff6df}
 .fleet .chip.done{opacity:.25}
 .ptips{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:center;font-size:13px;color:#33516b;margin:4px 0 0}
+.mode.install{background:#6a3fb5;margin:0 0 10px}
+.ihint{font-size:13px;line-height:1.45;color:#33516b;background:#eef4f9;border-radius:12px;padding:10px 12px;margin:0 0 10px}
+.ios-share{display:inline-block;border:1.5px solid currentColor;border-radius:4px;padding:0 3px;font-size:11px}
+body.paper .ihint{background:#f1ede0}
 </style>
 </head>
 <body>
@@ -713,6 +717,26 @@ function rulesPicker(onChange){
   draw();
   return box;
 }
+// ---------- install on the phone (PWA) ----------
+let installEvt = null;
+const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints > 1);
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; const b = document.getElementById('install'); if(b) b.replaceWith(installBox()); });
+addEventListener('appinstalled', () => { installEvt = null; const b = document.getElementById('install'); if(b) b.replaceWith(installBox()); });
+function installBox(){
+  const box = h('<div id="install"></div>');
+  if(window.claude || isStandalone() || location.protocol==='file:') return box;   // already an app, or not a standalone copy
+  if(installEvt){
+    const b = h('<button class="mode install"><span class="ic">📲</span><span class="tx"><b>Встановити на телефон</b><small>гра з\'явиться на головному екрані й працюватиме без інтернету</small></span><span class="arr">›</span></button>');
+    b.onclick = async () => { const e = installEvt; installEvt = null; try{ e.prompt(); await e.userChoice; }catch(_){} box.replaceWith(installBox()); };
+    box.appendChild(b);
+  } else if(isIOS()){
+    box.appendChild(h('<div class="ihint">📲 <b>Встановити на iPhone/iPad:</b> у Safari натисни <b>Поділитися</b> <span class="ios-share">⬆︎</span>, потім <b>«На початковий екран»</b>.</div>'));
+  } else {
+    box.appendChild(h('<div class="ihint">📲 <b>Встановити на телефон:</b> відкрий меню браузера <b>⋮</b> і вибери <b>«Встановити застосунок»</b> або <b>«Додати на головний екран»</b>.</div>'));
+  }
+  return box;
+}
 function modeBtn(id, icon, title, sub, cls){
   return '<button id="'+id+'" class="mode '+(cls||'')+'"><span class="ic">'+icon+'</span><span class="tx"><b>'+title+'</b><small>'+sub+'</small></span><span class="arr">›</span></button>';
 }
@@ -732,6 +756,7 @@ function menu(){
     + '</div>');
   card.appendChild(modes);
   card.appendChild(h('<p id="olnote" class="muted center" style="margin:0 0 6px"></p>'));
+  card.appendChild(installBox());
   card.appendChild(rulesPicker());
   card.appendChild(h(RULES_HTML));
   app.appendChild(card);
