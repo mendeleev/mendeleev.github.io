@@ -695,8 +695,71 @@ function cover(text, sub, label, onGo){
 }
 
 // ---------- main menu ----------
+// ---------- connection between two devices ----------
+// On claude.ai the page uses Claude's own "room". Everywhere else (GitHub Pages, installed app) it uses a free
+// public MQTT broker: each player publishes their whole state as a retained message, so a reconnecting player gets it back.
+const BROKERS = (() => { try{ const b = JSON.parse(localStorage.getItem('sb-brokers')); if(Array.isArray(b) && b.length) return b; }catch(e){} 
+  return ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt']; })();
+let mqttLib = null;
+function loadMqtt(){
+  if(window.mqtt) return Promise.resolve(window.mqtt);
+  if(!mqttLib) mqttLib = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'vendor/mqtt.min.js'; sc.onload = () => res(window.mqtt); sc.onerror = () => { mqttLib = null; rej(new Error('no-lib')); }; document.head.appendChild(sc); });
+  return mqttLib;
+}
+function mqttRooms(){
+  return { join: async (name) => {
+    const lib = await loadMqtt();
+    const base = 'mendeleev.github.io/battleships/v1/' + name + '/';
+    const myPeer = newId() + newId();
+    const peers = {};            // peer -> {presence, seen}
+    let mine = {}, client = null, live = true, brokerIdx = 0;
+    const peerSubs = [], connSubs = [];
+    const snapshot = () => [{ peer:myPeer, sameTab:true, isMe:true, presence:mine }]
+      .concat(Object.entries(peers).map(([k,v]) => ({ peer:k, sameTab:false, isMe:false, presence:v.presence })));
+    const firePeers = () => { const p = snapshot(); peerSubs.forEach(f => { try{ f({ peers:p, joined:[], left:[], updated:[] }); }catch(e){} }); };
+    const fireConn = c => connSubs.forEach(f => { try{ f(c); }catch(e){} });
+    const publishMine = () => { if(client && client.connected) client.publish(base+myPeer, JSON.stringify({ p:mine }), { retain:true, qos:1 }); };
+    function connect(){
+      const url = BROKERS[brokerIdx % BROKERS.length];
+      let everConnected = false;
+      const c = lib.connect(url, { clientId:'bs_'+myPeer, keepalive:20, reconnectPeriod:2500, connectTimeout:8000, clean:true,
+        will:{ topic: base+myPeer, payload:'', retain:true, qos:1 } });
+      client = c;
+      c.on('connect', () => { everConnected = true; c.subscribe(base+'+', { qos:1 }); publishMine(); fireConn(true); });
+      c.on('message', (topic, payload) => {
+        const peer = topic.slice(base.length); if(!peer || peer===myPeer) return;
+        const txt = payload ? payload.toString() : '';
+        if(!txt){ if(peers[peer]){ delete peers[peer]; firePeers(); } return; }
+        try{ const d = JSON.parse(txt); if(d && typeof d.p==='object'){ peers[peer] = { presence:d.p, seen:Date.now() }; firePeers(); } }catch(e){}
+      });
+      c.on('close', () => { if(live) fireConn(false); });
+      c.on('offline', () => { if(live) fireConn(false); });
+      // first broker unreachable: try the next one
+      setTimeout(() => { if(live && client===c && !everConnected && BROKERS.length > 1){ try{ c.end(true); }catch(e){} brokerIdx++; connect(); } }, 9000);
+    }
+    connect();
+    // players republish every few seconds; forget the ones we have not heard for a while
+    const sweep = setInterval(() => { const now = Date.now(); let ch = false; for(const k in peers){ if(now - peers[k].seen > 20000){ delete peers[k]; ch = true; } } if(ch) firePeers(); }, 5000);
+    return {
+      name,
+      presence(patch){ mine = Object.assign({}, mine, patch); publishMine(); setTimeout(firePeers, 0); return Promise.resolve(); },
+      onPeers(f){ peerSubs.push(f); setTimeout(() => f({ peers:snapshot(), joined:[], left:[], updated:[] }), 0); return () => { const k = peerSubs.indexOf(f); if(k>=0) peerSubs.splice(k,1); }; },
+      peers: snapshot,
+      connected(){ return !!(client && client.connected); },
+      onConnection(f){ connSubs.push(f); setTimeout(() => f(!!(client && client.connected)), 0); return () => { const k = connSubs.indexOf(f); if(k>=0) connSubs.splice(k,1); }; },
+      emit(){ return Promise.resolve(); }, on(){ return () => {}; },
+      leave(){
+        live = false; clearInterval(sweep);
+        try{ if(client && client.connected) client.publish(base+myPeer, '', { retain:true, qos:1 }, () => { try{ client.end(); }catch(e){} }); else client && client.end(true); }catch(e){}
+        return Promise.resolve();
+      }
+    };
+  }};
+}
 let roomTried = false;
-const roomPromise = (window.claude && claude.use) ? claude.use('room').then(r => { roomTried = true; return r; }).catch(() => { roomTried = true; return null; }) : Promise.resolve(null).then(()=>{roomTried=true; return null;});
+const roomPromise = (window.claude && claude.use)
+  ? claude.use('room').then(r => { roomTried = true; return r; }).catch(() => { roomTried = true; return null; })
+  : Promise.resolve(mqttRooms()).then(r => { roomTried = true; return r; });
 
 function rulesPicker(onChange){
   const box = h('<div class="settings"></div>');
@@ -772,7 +835,6 @@ function menu(){
   roomPromise.then(r => {
     if(!document.body.contains(ol)) return;
     ol.disabled = !r;
-    if(!r && !window.claude){ ol.style.display = 'none'; note.textContent = ''; return; }   // standalone copy (e.g. GitHub Pages): no two-device link
     note.textContent = r ? '' : 'Гра на двох пристроях працює, коли сторінку відкрито на claude.ai з вашим входом.';
   });
   ol.onclick = () => onlineLobby();
@@ -1063,7 +1125,7 @@ async function onlineJoin(code, name, creator){
   if(!room){ onlineLobby('Не вдалося підключитися'); return; }
   let g;
   try{ g = await room.join('seabattle-'+code); }
-  catch(e){ onlineLobby('Не вдалося підключитися ('+(e&&e.code||'помилка')+')'); return; }
+  catch(e){ onlineLobby(e && e.message==='no-lib' ? 'Немає інтернету — для гри на двох пристроях потрібне з\'єднання' : 'Не вдалося підключитися ('+(e&&e.code||'помилка')+')'); return; }
   // saved games for this code, one per player id: {id: me}
   const key = 'sb-on2-'+code;
   let saved = lsGet(key); if(!saved || typeof saved !== 'object') saved = {};

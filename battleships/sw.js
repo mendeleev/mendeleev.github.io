@@ -1,6 +1,6 @@
 // Service worker «Морський бій»: гра працює офлайн.
 // Під час кожного оновлення гри змінюй VERSION, щоб браузер підтягнув нові файли.
-const VERSION = "battleships-v2";
+const VERSION = "battleships-v3";
 const ASSETS = [
   "./",
   "index.html",
