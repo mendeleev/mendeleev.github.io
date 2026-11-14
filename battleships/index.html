@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Морський бій</title>
+<meta name="description" content="Морський бій на двох або проти комп'ютера: класика, залп, бомба й радар. Працює офлайн.">
+<meta name="theme-color" content="#0b3d63">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{
+  --bg1:#0b3d63; --bg2:#0f5a8f; --sea2:#0f5a8f; --water:#d9eefb; --water-h:#bfe0f7; --line:#9cc7e6; --ship:#4a5868;
+  --hit:#e8533a; --hitbg:#ffd9d1; --sunk:#8f1d10; --miss:#6f8aa0; --ink:#0d2236; --card:#ffffff; --ok:#1f9d55; --accent:#f3b230;
+  --hdr:#33516b; --scan:rgba(124,77,206,.16); --scanink:#6a3fb5; --topink:#fff;
+}
+/* "notebook" theme, like the paper printout: squared paper, pencil ships, pen marks */
+body.paper{
+  --bg1:#efe9d8; --bg2:#e7dfc9; --water:#fdfdf8; --water-h:#eef3fb; --line:#a9c4e8; --ship:#5d6d8c;
+  --hit:#d23b2a; --hitbg:#fdfdf8; --sunk:#d23b2a; --miss:#2b4fa3; --hdr:#2b4fa3; --card:#fffef9; --topink:#2b3a55;
+}
+body.paper .board .c{border-color:var(--line)}
+body.paper .c.ship::before{background:repeating-linear-gradient(45deg,var(--ship) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 2px var(--ship)}
+body.paper .c.sunk::before{background:repeating-linear-gradient(45deg,rgba(210,59,42,.35) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 2px var(--hit)}
+body.paper .c.sunk::after,body.paper .c.hit::after{color:var(--hit);font-family:"Caveat","Comic Sans MS","Segoe Print",cursive}
+body.paper .board .h,body.paper .logo,body.paper h2{font-family:"Caveat","Comic Sans MS","Segoe Print",cursive}
+body.paper .board .h{font-size:clamp(15px,3.8vw,20px)}
+body.paper .logo{font-size:26px}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);
+  background:linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 100%);background-attachment:fixed;
+  padding:calc(env(safe-area-inset-top) + 6px) calc(env(safe-area-inset-right) + 8px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 8px);}
+.top{display:flex;align-items:center;gap:6px;max-width:980px;margin:0 auto 6px;color:var(--topink)}
+.top .logo{font-size:20px;font-weight:800;padding-left:6px;flex:1}
+.top button{min-height:38px;padding:6px 12px;margin:0;background:rgba(255,255,255,.15);color:var(--topink)}
+body.paper .top button{background:rgba(0,0,0,.06)}
+.card{background:var(--card);border-radius:18px;padding:12px;max-width:980px;margin:0 auto 10px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+body.paper .card{box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.center{text-align:center}
+h2{margin:0 0 10px;font-size:22px}
+p{margin:6px 0;line-height:1.45}
+.muted{color:#5b6b7a;font-size:14px}
+button{font:inherit;font-weight:600;border:0;border-radius:12px;padding:12px 18px;min-height:48px;cursor:pointer;background:var(--sea2);color:#fff;margin:4px}
+button.alt{background:#e7eef5;color:var(--ink)}
+button.go{background:var(--ok)}
+button.warn{background:var(--accent);color:#2a1d00}
+button:disabled{opacity:.45;cursor:default}
+input{font:inherit;font-size:18px;padding:11px 12px;border:2px solid #c9d8e5;border-radius:12px;width:100%;max-width:320px}
+label{display:block;font-weight:600;margin:10px 0 4px}
+.row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
+.boards{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;align-items:flex-start}
+.bwrap{display:flex;flex-direction:column;align-items:center}
+.btitle{font-weight:700;margin-bottom:6px;font-size:16px}
+
+/* boards */
+.board{display:grid;grid-template-columns:repeat(11,1fr);width:min(94vw,460px,calc(100vh - var(--chrome,300px)));width:min(94vw,460px,calc(100svh - var(--chrome,300px)));min-width:250px;user-select:none;touch-action:manipulation}
+.board.small{width:min(70vw,300px)}
+.placing .board{--chrome:340px}
+.battle.armed .board{--chrome:350px}
+.board .h{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:clamp(11px,2.8vw,15px);color:var(--hdr);aspect-ratio:1}
+.board .c{aspect-ratio:1;background:var(--water);border:1px solid var(--line);margin:-.5px;position:relative;display:flex;align-items:center;justify-content:center}
+.board.click .c:not(.miss):not(.hit):not(.sunk):not(.auto){cursor:pointer}
+.board.click .c:not(.miss):not(.hit):not(.sunk):not(.auto):hover{background:var(--water-h)}
+.board.aim .c{cursor:crosshair!important}
+/* ships: one continuous hull drawn inside the cells, rounded at bow and stern */
+.c.ship::before,.c.sunk::before,.c.gok::before,.c.gbad::before{content:"";position:absolute;inset:3px;background:var(--ship);border-radius:6px;pointer-events:none}
+.c.hh::before{left:-1px;right:-1px;border-radius:0}
+.c.hh.eL::before{left:3px;border-radius:999px 0 0 999px}
+.c.hh.eR::before{right:3px;border-radius:0 999px 999px 0}
+.c.hv::before{top:-1px;bottom:-1px;border-radius:0}
+.c.hv.eT::before{top:3px;border-radius:999px 999px 0 0}
+.c.hv.eB::before{bottom:3px;border-radius:0 0 999px 999px}
+.c.h1::before{border-radius:999px}
+.c.ship.hit::before{background:#d9907f}
+.c.sunk::before{background:var(--sunk)}
+.c.gok::before{background:rgba(31,157,85,.55)}
+.c.gbad::before{background:rgba(232,83,58,.55)}
+.c.sel::before{box-shadow:0 0 0 3px var(--accent)}
+.c::after{position:relative;z-index:1}
+.c.miss::after,.c.auto::after{content:"";width:22%;height:22%;border-radius:50%;background:var(--miss)}
+.c.auto::after{opacity:.35}
+.c.hit{background:var(--hitbg)}
+.c.hit::after,.c.sunk::after{content:"✕";color:var(--hit);font-weight:900;font-size:clamp(14px,4vw,22px);line-height:1}
+.c.ship.hit{background:var(--water)}
+.c.sunk{background:var(--water)}
+.c.sunk::after{color:#fff}
+body.paper .c.sunk::after{color:var(--hit)}
+.c .badge{z-index:2}
+.c.scan{box-shadow:inset 0 0 0 100px var(--scan)}
+.c .badge{position:absolute;top:0;left:2px;font-size:clamp(9px,2.4vw,12px);font-weight:900;color:var(--scanink);line-height:1.1}
+.c.last{outline:3px solid var(--accent);outline-offset:-3px;z-index:1}
+.c.last.hit,.c.last.sunk{animation:pop .45s ease-out}
+.c.last.miss{animation:splash .5s ease-out}
+.c.bad{animation:shake .3s}
+@keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes splash{0%{box-shadow:0 0 0 0 rgba(15,90,143,.6)}100%{box-shadow:0 0 0 14px rgba(15,90,143,0)}}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+
+/* battle layout: one board at a time on phones, both side by side on wide screens */
+.tabs{display:flex;gap:6px;justify-content:center;margin:0 0 6px}
+.tabs button{flex:1;max-width:220px;margin:0;min-height:42px;padding:8px 10px;background:#e7eef5;color:var(--ink);position:relative}
+.tabs button.on{background:var(--sea2);color:#fff}
+.tabs button .dot{position:absolute;top:6px;right:8px;width:10px;height:10px;border-radius:50%;background:var(--hit)}
+.battle.show-enemy .pane.own,.battle.show-own .pane.enemy{display:none}
+.battle .head{min-height:54px;display:flex;flex-direction:column;justify-content:center}
+.battle .status{margin:0;font-size:18px;min-height:0}
+.battle .flash{margin:2px 0 4px;font-size:21px;min-height:28px}
+.battle .win{font-size:clamp(24px,7vw,40px);margin:0}
+.battle .score{font-size:15px;margin:0}
+.battle .stats{font-size:12px;margin:2px 0;gap:8px}
+.battle .stats b{font-size:13px}
+.battle .rank{font-size:14px;margin:0}
+.battle .row button{min-height:44px;padding:10px 16px}
+.wide-only{display:none}
+@media (min-width:820px){
+  .wide-only{display:block}
+  .battle .tabs{display:none}
+  .battle .pane{display:flex!important}
+  .battle .pane.own .board{width:min(34vw,330px)}
+  .battle .pane.enemy .board{width:min(50vw,460px,calc(100vh - 250px))}
+}
+.weapons{display:flex;gap:6px;justify-content:center;margin:6px 0 0}
+.weapons button{margin:0;min-height:40px;padding:6px 10px;font-size:15px;background:#e7eef5;color:var(--ink)}
+.weapons button.on{background:#6a3fb5;color:#fff}
+.salvo{display:flex;gap:3px;justify-content:center;margin:0 0 4px}
+.salvo i{display:block;width:12px;height:12px;border-radius:50%;background:var(--accent)}
+.salvo i.used{background:#d6dde4}
+.stats{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;font-size:14px;margin:4px 0}
+.stats b{font-size:16px}
+.rank{font-size:15px;margin:2px 0}
+
+.hint{font-size:15px;margin:2px 0 4px}
+.err{color:var(--hit);font-weight:700;font-size:14px;min-height:20px}
+.prow{display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.prow button{margin:0;min-height:44px;padding:8px 12px;font-size:15px}
+.prow button.go{min-width:130px}
+.status{font-size:20px;font-weight:700;text-align:center;margin:4px 0 10px;min-height:28px}
+.status.my{color:var(--ok)} .status.their{color:#8a5a00}
+.flash{font-size:26px;font-weight:800;text-align:center;min-height:34px;margin:2px 0 8px}
+.flash.miss{color:var(--miss)} .flash.hit{color:var(--hit)} .flash.sunk{color:var(--sunk)} .flash.radar{color:var(--scanink)}
+.fleet{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:4px 0}
+.fship{display:flex;gap:2px;padding:4px;border-radius:6px;background:#eef4f9}
+.fship i{display:block;width:11px;height:11px;background:var(--ship);border-radius:2px}
+.fship.done{opacity:.25}
+.fship.next{outline:2px solid var(--accent)}
+.tracker{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;align-items:center;margin:0 0 6px;font-size:12px;color:var(--hdr);max-width:100%}
+.tracker .fship{padding:2px;gap:1px}
+.tracker .fship i{width:7px;height:7px}
+.tracker span{margin-right:2px}
+.tracker .fship.sunkf{opacity:.3;background:#fde2dc}
+.tracker .fship.sunkf i{background:var(--sunk)}
+.cover{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--topink);text-align:center}
+.cover .big{font-size:clamp(28px,7vw,44px);font-weight:800;margin:10px 0}
+.cover button{font-size:20px;padding:16px 26px}
+.code{font-size:42px;font-weight:800;letter-spacing:8px;color:var(--sea2)}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;background:#e7eef5;color:var(--ink)}
+.pill.on{background:#d5f3e1;color:#11633a} .pill.off{background:#fde2dc;color:#8f1d10}
+.win{font-size:clamp(30px,8vw,48px);font-weight:900;text-align:center;margin:8px 0}
+.score{text-align:center;font-size:20px;font-weight:700;margin:4px 0 10px}
+.seg{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:4px 0}
+.seg button{margin:0;min-height:42px;padding:8px 12px;font-size:15px;background:#e7eef5;color:var(--ink);flex:1;max-width:220px}
+.seg button.on{background:var(--sea2);color:#fff}
+.seg button small{display:block;font-weight:400;font-size:12px;opacity:.85}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.confetti span{position:absolute;top:-40px;font-size:28px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+.thinking{display:inline-block;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.3}}
+details{margin-top:10px;text-align:left} summary{cursor:pointer;font-weight:600;text-align:center}
+.rules li{margin:4px 0}
+
+/* menu */
+.card.narrow{max-width:520px}
+.menu{padding:16px}
+.sec-title{font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:#5b6b7a;margin:2px 2px 8px}
+.modes{display:flex;flex-direction:column;gap:10px;margin-bottom:8px}
+.mode{display:flex;align-items:center;gap:14px;width:100%;margin:0;padding:14px 16px;text-align:left;border-radius:16px;min-height:72px}
+.mode .ic{font-size:30px;width:40px;text-align:center;flex:none}
+.mode .tx{flex:1}
+.mode b{display:block;font-size:17px}
+.mode small{display:block;font-weight:400;font-size:13px;opacity:.9;margin-top:2px}
+.mode .arr{font-size:28px;opacity:.6;flex:none}
+.settings{border-top:1px solid #e3e9ef;margin-top:6px;padding-top:12px}
+.seg2{display:flex;background:#e7eef5;border-radius:12px;padding:4px;gap:4px}
+.seg2 button{flex:1;margin:0;min-height:42px;padding:8px;background:transparent;color:var(--ink);border-radius:9px}
+.seg2 button.on{background:#fff;color:var(--sea2);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.sec-note{font-size:13px;color:#5b6b7a;margin:6px 2px 10px;min-height:18px}
+.sw{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:10px 12px;background:#f2f6fa;color:var(--ink);text-align:left;border-radius:12px}
+.sw .sw-tx{flex:1}.sw b{display:block;font-size:15px}.sw small{display:block;font-weight:400;font-size:12px;color:#5b6b7a}
+.tg{flex:none;width:48px;height:28px;border-radius:14px;background:#c3cfda;position:relative;transition:background .2s}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s}
+.tg.on{background:var(--ok)} .tg.on::after{left:23px}
+.menu details{margin-top:12px}
+body.paper .seg2,body.paper .sw{background:#f1ede0}
+/* placement */
+.placeboard{touch-action:none}
+.placeboard .c{cursor:pointer}
+.placing .fleet{gap:5px;flex-wrap:wrap}
+.placing .fleet .fship i{width:9px;height:9px}
+.fleet .chip{margin:0;min-height:0;padding:4px;background:#eef4f9;border-radius:8px;gap:2px;display:flex}
+.fleet .chip.next{outline:3px solid var(--accent);background:#fff6df}
+.fleet .chip.done{opacity:.25}
+.ptips{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:center;font-size:13px;color:#33516b;margin:4px 0 0}
+</style>
+</head>
+<body>
+<div class="top"><div class="logo">⚓ Морський бій</div><button id="theme" aria-label="Оформлення">📓</button><button id="mute" aria-label="Звук">🔊</button></div>
+<div id="banner"></div>
+<div id="app"></div>
+
+<script>
+(function(){
+const N = 10;
+const LETTERS = ['А','Б','В','Г','Д','Е','Є','Ж','З','И'];
+const FLEET = [4,3,3,2,2,2,1,1,1,1];
+const app = document.getElementById('app');
+const banner = document.getElementById('banner');
+
+// ---------- storage helpers ----------
+function lsGet(k){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+function sessId(){ try{ return sessionStorage.getItem('sb-tab'); }catch(e){ return null; } }
+function setSessId(id){ try{ sessionStorage.setItem('sb-tab', id); }catch(e){} }
+function newId(){ return Math.random().toString(36).slice(2,10); }
+function tabId(){ let id = sessId(); if(!id){ id = newId(); setSessId(id); } return id; }
+
+// ---------- rules settings ----------
+// mode: 'classic' (hit = shoot again) | 'salvo' (as many shots per turn as you have ships afloat)
+// weapons: one 💣 bomb (+-shape) and one 📡 radar (3×3 scan) per player; classic only
+function loadRules(){ const r = lsGet('sb-rules') || {}; return { mode: r.mode==='salvo' ? 'salvo' : 'classic', weapons: r.weapons !== false }; }
+let RULES = loadRules();
+const weaponsOn = rules => rules.weapons && rules.mode==='classic';
+function rulesText(r){ return (r.mode==='salvo' ? 'Залп' : 'Класика') + (weaponsOn(r) ? ' + суперзброя' : ''); }
+
+// ---------- theme & sound ----------
+const themeBtn = document.getElementById('theme');
+function applyTheme(){ const p = lsGet('sb-theme')==='paper'; document.body.classList.toggle('paper', p); themeBtn.textContent = p ? '🌊' : '📓'; }
+themeBtn.onclick = () => { lsSet('sb-theme', lsGet('sb-theme')==='paper' ? 'sea' : 'paper'); applyTheme(); };
+applyTheme();
+let AC = null, muted = !!lsGet('sb-mute');
+const muteBtn = document.getElementById('mute');
+function drawMute(){ muteBtn.textContent = muted ? '🔇' : '🔊'; }
+drawMute();
+muteBtn.onclick = () => { muted = !muted; lsSet('sb-mute', muted); drawMute(); if(!muted) sound('hit'); };
+function ctx(){ try{ if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); return AC; }catch(e){ return null; } }
+document.addEventListener('pointerdown', () => { if(!muted) ctx(); }, {once:true});
+function noise(a, dur, freq, vol){
+  const len = Math.floor(a.sampleRate*dur), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/len, 2);
+  const src = a.createBufferSource(); src.buffer = buf;
+  const f = a.createBiquadFilter(); f.type='lowpass'; f.frequency.value = freq;
+  const g = a.createGain(); g.gain.value = vol;
+  src.connect(f); f.connect(g); g.connect(a.destination); src.start();
+}
+function beep(a, f0, f1, dur, vol, type, delay){
+  const t = a.currentTime + (delay||0);
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type||'sine'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t+dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+dur+.05);
+}
+function sound(kind){
+  if(muted) return;
+  const a = ctx(); if(!a) return;
+  try{
+    if(kind==='miss'){ noise(a, .45, 1200, .35); beep(a, 600, 200, .25, .08); }
+    else if(kind==='hit'){ noise(a, .35, 500, .7); beep(a, 160, 60, .3, .5, 'triangle'); }
+    else if(kind==='sunk'){ noise(a, .9, 350, .9); beep(a, 140, 35, .8, .6, 'sawtooth'); }
+    else if(kind==='bomb'){ beep(a, 900, 200, .35, .15, 'sine'); setTimeout(() => { try{ noise(a, 1.2, 300, 1); beep(a, 90, 30, 1, .7, 'sawtooth'); }catch(e){} }, 330); }
+    else if(kind==='radar'){ [0,.25,.5].forEach(d => beep(a, 1400, 1300, .12, .12, 'sine', d)); }
+    else if(kind==='win'){ [523,659,784,1047].forEach((f,k) => beep(a, f, f, .25, .2, 'square', k*.14)); }
+    else if(kind==='lose'){ [392,330,262].forEach((f,k) => beep(a, f, f*.97, .3, .15, 'triangle', k*.2)); }
+  }catch(e){}
+}
+function confetti(){
+  const c = document.createElement('div'); c.className='confetti';
+  const em = ['🎉','⭐','🏆','🎊','🚢','✨'];
+  for(let k=0;k<40;k++){
+    const s = document.createElement('span'); s.textContent = em[k%em.length];
+    s.style.left = Math.random()*100+'vw'; s.style.animationDuration = (2+Math.random()*2.5)+'s'; s.style.animationDelay = (Math.random()*1.2)+'s';
+    c.appendChild(s);
+  }
+  document.body.appendChild(c); setTimeout(() => c.remove(), 6000);
+}
+
+// ---------- win counter & ranks ----------
+function scoreKey(a,b){ return 'sb-score-' + [a,b].sort().join('|'); }
+function addWin(winner, a, b){ const k = scoreKey(a,b), s = lsGet(k) || {}; s[winner] = (s[winner]||0)+1; lsSet(k, s); }
+function scoreLine(a, b){ const s = lsGet(scoreKey(a,b)) || {}; return '<div class="score">Рахунок: '+esc(a)+' '+(s[a]||0)+' : '+(s[b]||0)+' '+esc(b)+'</div>'; }
+// ranks are earned by beating the computer (on "Хитрий" a win counts double)
+const RANKS = [[0,'Юнга','🧒'],[2,'Матрос','⚓'],[5,'Боцман','🪢'],[9,'Лейтенант','🎖️'],[14,'Капітан','🧭'],[20,'Адмірал','👑']];
+function rankInfo(name){
+  const pts = (lsGet('sb-rank') || {})[name] || 0;
+  let k = 0; RANKS.forEach((r,i) => { if(pts >= r[0]) k = i; });
+  const next = RANKS[k+1];
+  return { pts, title: RANKS[k][1], icon: RANKS[k][2], next: next ? next[1] : null, need: next ? next[0]-pts : 0, idx:k };
+}
+function addRankPts(name, pts){ const m = lsGet('sb-rank') || {}; m[name] = (m[name]||0) + pts; lsSet('sb-rank', m); }
+function rankLine(r){ return r.icon+' <b>'+r.title+'</b>'+(r.next ? ' · до звання «'+r.next+'» ще '+r.need+' '+plural(r.need,'очко','очки','очок') : ' · найвище звання!'); }
+function plural(n, one, few, many){ const a=n%10, b=n%100; return (a===1&&b!==11) ? one : (a>=2&&a<=4&&(b<10||b>=20)) ? few : many; }
+
+// ---------- geometry ----------
+const rc = i => [Math.floor(i/N), i%N];
+const coord = i => { const [r,c] = rc(i); return LETTERS[c] + (r+1); };
+const inb = (r,c) => r>=0&&r<N&&c>=0&&c<N;
+function neighbors(i){
+  const [r,c] = rc(i), out=[];
+  for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){ if((dr||dc) && inb(r+dr,c+dc)) out.push((r+dr)*N+c+dc); }
+  return out;
+}
+function plusArea(i){ const [r,c]=rc(i); return [[r,c],[r-1,c],[r+1,c],[r,c-1],[r,c+1]].filter(([a,b])=>inb(a,b)).map(([a,b])=>a*N+b); }
+function squareArea(i){ return [i].concat(neighbors(i)); }
+function fitStart(start, size, horiz){ let [r,c] = rc(start); if(horiz) c = Math.min(c, N-size); else r = Math.min(r, N-size); return r*N+c; }
+function shipCells(start, size, horiz){
+  const [r,c] = rc(start), cells=[];
+  for(let k=0;k<size;k++){ const rr = horiz ? r : r+k, cc = horiz ? c+k : c; if(rr>=N || cc>=N) return null; cells.push(rr*N+cc); }
+  return cells;
+}
+function canPlace(ships, cells){
+  if(!cells) return false;
+  const blocked = new Set();
+  ships.forEach(s => s.forEach(i => { blocked.add(i); neighbors(i).forEach(n => blocked.add(n)); }));
+  return cells.every(i => !blocked.has(i));
+}
+function randomFleet(){
+  for(let attempt=0; attempt<200; attempt++){
+    const ships=[]; let ok=true;
+    for(const size of FLEET){
+      let placed=false;
+      for(let t=0;t<300;t++){ const cells = shipCells(Math.floor(Math.random()*N*N), size, Math.random()<.5); if(canPlace(ships, cells)){ ships.push(cells); placed=true; break; } }
+      if(!placed){ ok=false; break; }
+    }
+    if(ok) return ships;
+  }
+  return [];
+}
+function remainingSizes(ships){ const left = FLEET.slice(); ships.forEach(s => { const k = left.indexOf(s.length); if(k>=0) left.splice(k,1); }); return left; }
+function shipAt(ships, i){ return ships.find(s => s.includes(i)) || null; }
+function isSunk(ship, set){ return ship.every(i => set.has(i)); }
+function allSunk(ships, set){ return ships.length>0 && ships.every(s => isSunk(s, set)); }
+function afloat(ships, set){ return ships.filter(s => !isSunk(s, set)).length; }
+// hull shape class for one cell of a ship
+function hull(ship, i){
+  if(ship.length===1) return ' h1';
+  const horiz = Math.abs(ship[1]-ship[0])===1, first = Math.min(...ship), last = Math.max(...ship);
+  const base = horiz ? ' hh' : ' hv';
+  if(i===first) return base + (horiz ? ' eL' : ' eT');
+  if(i===last) return base + (horiz ? ' eR' : ' eB');
+  return base;
+}
+
+// =====================================================================
+// RULES ENGINE: every mode replays a list of actions {by, kind:'shot'|'bomb'|'radar', cell}
+// =====================================================================
+function derive(ships, actions, rules, starter){
+  const shot = [new Set(), new Set()], used = [{bomb:0,radar:0},{bomb:0,radar:0}], radars = [[],[]], last = [[],[]], log = [];
+  let turn = starter, budget = 0, spent = 0, winner = null, valid = 0;
+  const startTurn = () => { spent = 0; budget = rules.mode==='salvo' ? afloat(ships[turn], shot[1-turn]) : Infinity; };
+  startTurn();
+  for(const a of actions){
+    if(winner!==null || a.by!==turn || !Number.isInteger(a.cell) || a.cell<0 || a.cell>=N*N) break;
+    const o = 1-turn, mine = shot[turn], enemy = ships[o];
+    let kind = a.kind, cells = [], entry;
+    if((kind==='bomb' || kind==='radar') && (!weaponsOn(rules) || used[turn][kind])) break;
+    if(kind==='radar'){
+      used[turn].radar++;
+      const area = squareArea(a.cell);
+      const count = area.filter(i => shipAt(enemy,i) && !mine.has(i)).length;
+      radars[turn].push({cell:a.cell, area, count, pre: area.filter(i => mine.has(i))});
+      last[turn] = [a.cell];
+      entry = { by:turn, kind, cell:a.cell, cells:[], count, res:'radar' };
+    } else {
+      if(kind==='bomb'){ cells = plusArea(a.cell).filter(i => !mine.has(i)); if(!cells.length) break; used[turn].bomb++; }
+      else { kind='shot'; if(mine.has(a.cell)) break; cells = [a.cell]; }
+      const before = new Set(mine);
+      cells.forEach(i => mine.add(i));
+      const hits = cells.filter(i => shipAt(enemy,i));
+      const sunkNow = enemy.filter(s => isSunk(s, mine) && !isSunk(s, before));
+      last[turn] = cells.length ? cells : [a.cell];
+      entry = { by:turn, kind, cell:a.cell, cells, hits:hits.length, sunk:sunkNow.length, res: sunkNow.length ? 'sunk' : hits.length ? 'hit' : 'miss' };
+    }
+    log.push(entry); valid++;
+    if(entry.res!=='radar' && allSunk(enemy, shot[turn])){ winner = turn; break; }
+    spent++;
+    let pass;
+    if(rules.mode==='salvo') pass = spent >= budget;
+    else pass = entry.res==='radar' || entry.res==='miss';
+    if(pass){ turn = o; startTurn(); }
+  }
+  return { shot, used, radars, last, log, turn, budget, spent, winner, valid };
+}
+function entryText(e, who){
+  const pre = who ? who+': ' : '';
+  if(e.kind==='radar') return pre+'📡 '+coord(e.cell)+' — поруч '+(e.count ? e.count+' '+plural(e.count,'клітинка','клітинки','клітинок')+' з кораблями' : 'порожньо');
+  if(e.kind==='bomb') return pre+'💣 '+coord(e.cell)+' — '+(e.hits ? e.hits+' '+plural(e.hits,'влучання','влучання','влучань')+(e.sunk ? ', потоплено!' : '') : 'мимо');
+  return pre+coord(e.cell)+' — '+({miss:'мимо', hit:'поранив!', sunk:'убив! 💥'}[e.res]);
+}
+function entrySound(e){ sound(e.kind==='bomb' ? 'bomb' : e.kind==='radar' ? 'radar' : e.res); if(e.kind==='bomb' && e.res!=='miss') setTimeout(() => sound(e.res), 500); }
+function flashOf(e, who){ return e ? { k: e.res, text: entryText(e, who) } : null; }
+function statsOf(ships, D, p){
+  const set = D.shot[p], shots = set.size, hits = [...set].filter(i => shipAt(ships[1-p], i)).length;
+  return { shots, hits, acc: shots ? Math.round(100*hits/shots) : 0 };
+}
+function statsHtml(ships, D, names){
+  return '<div class="stats">'+[0,1].map(p => { const s = statsOf(ships, D, p); return '<span>'+esc(names[p])+': <b>'+s.acc+'%</b> влучність ('+s.hits+' з '+s.shots+')</span>'; }).join('')+'</div>';
+}
+
+// cell classes for the board you are shooting at
+function enemyView(ships, D, me){
+  const set = D.shot[me], cls = {}, badges = {}, autos = new Set(), scan = new Set();
+  ships.forEach(s => { if(isSunk(s,set)) s.forEach(i => neighbors(i).forEach(n => autos.add(n))); });
+  D.radars[me].forEach(r => { r.area.forEach(i => scan.add(i)); badges[r.cell] = '📡'+r.count; });
+  const lastSet = new Set(D.last[me]);
+  for(let i=0;i<N*N;i++){
+    let k='';
+    if(set.has(i)){ const s = shipAt(ships,i); k = !s ? 'miss' : (isSunk(s,set) ? 'sunk'+hull(s,i) : 'hit'); }
+    else if(autos.has(i)) k='auto';
+    if(scan.has(i)) k+=' scan';
+    if(lastSet.has(i)) k+=' last';
+    cls[i]=k;
+  }
+  return { cls, badges };
+}
+// cell classes for your own board
+function ownView(ships, incoming, lastCells){
+  const set = incoming instanceof Set ? incoming : new Set(incoming), cls = {}, lastSet = new Set(lastCells||[]);
+  for(let i=0;i<N*N;i++){
+    const s = shipAt(ships,i);
+    let k = s ? 'ship'+hull(s,i) : '';
+    if(set.has(i)) k += s ? (isSunk(s,set) ? ' sunk' : ' hit') : ' miss';
+    if(lastSet.has(i)) k+=' last';
+    cls[i]=k;
+  }
+  return cls;
+}
+
+// ---------- rendering ----------
+function esc(s){ return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function h(html){ const d=document.createElement('div'); d.innerHTML=html; return d.firstElementChild; }
+function btn(label, cls, fn){ const b = h('<button class="'+(cls||'')+'">'+label+'</button>'); b.onclick = fn; return b; }
+function boardEl(cls, onClick, small, badges){
+  const b = document.createElement('div');
+  b.className = 'board' + (small?' small':'') + (onClick?' click':'');
+  b.appendChild(Object.assign(document.createElement('div'),{className:'h'}));
+  LETTERS.forEach(l => { const e=document.createElement('div'); e.className='h'; e.textContent=l; b.appendChild(e); });
+  for(let r=0;r<N;r++){
+    const e=document.createElement('div'); e.className='h'; e.textContent=r+1; b.appendChild(e);
+    for(let c=0;c<N;c++){
+      const i=r*N+c, d=document.createElement('div');
+      d.className='c '+(cls[i]||'');
+      d.setAttribute('aria-label', coord(i));
+      if(badges && badges[i]) d.appendChild(Object.assign(document.createElement('span'), {className:'badge', textContent:badges[i]}));
+      if(onClick) d.addEventListener('click', () => onClick(i, d));
+      b.appendChild(d);
+    }
+  }
+  return b;
+}
+function wrap(title, el){ const w=document.createElement('div'); w.className='bwrap'; if(title) w.appendChild(h('<div class="btitle">'+title+'</div>')); w.appendChild(el); return w; }
+function fleetEl(ships){
+  const left = remainingSizes(ships), next = left.length ? Math.max(...left) : 0;
+  const f=document.createElement('div'); f.className='fleet';
+  const counts = {}; left.forEach(s => counts[s]=(counts[s]||0)+1);
+  let markedNext=false;
+  FLEET.forEach(size => {
+    const e=document.createElement('div'); let done = true;
+    if(counts[size]>0){ counts[size]--; done=false; }
+    e.className='fship'+(done?' done':'');
+    if(!done && size===next && !markedNext){ e.classList.add('next'); markedNext=true; }
+    e.innerHTML = '<i></i>'.repeat(size); f.appendChild(e);
+  });
+  return f;
+}
+function trackerEl(ships, set){
+  const t = document.createElement('div'); t.className='tracker';
+  t.appendChild(Object.assign(document.createElement('span'), {textContent: 'Залишилось: '+afloat(ships,set)}));
+  ships.slice().sort((a,b)=>b.length-a.length).forEach(s => {
+    const e = document.createElement('div'); e.className = 'fship' + (isSunk(s,set) ? ' sunkf' : '');
+    e.innerHTML = '<i></i>'.repeat(s.length); t.appendChild(e);
+  });
+  return t;
+}
+
+// ---------- battle screen (shared by all modes) ----------
+let HOLD = null, LAST_AUTO = null, OVERRIDE = null, WEAPON = 'shot';
+function holdView(view, ms, rerender){
+  HOLD = { view, until: Date.now()+ms };
+  setTimeout(() => { if(HOLD && Date.now() >= HOLD.until - 5){ HOLD = null; rerender(); } }, ms);
+}
+function holding(){ return HOLD && Date.now() < HOLD.until; }
+// o: head, flash, auto, enemyTab, enemyShips, D, me, onAct(kind, cell) | null, ownCls, ownAlert, weapons {bomb,radar} | null, salvo {left,total} | null, buttons
+function battle(o){
+  let auto = o.auto;
+  if(holding()) auto = HOLD.view;
+  if(auto !== LAST_AUTO){ OVERRIDE = null; LAST_AUTO = auto; }
+  if(!o.onAct || !o.weapons || !o.weapons[WEAPON]) WEAPON = 'shot';
+  const card = h('<div class="card battle'+(o.weapons ? ' armed' : '')+'"></div>');
+  const head = h('<div class="head"></div>');
+  head.innerHTML = o.head + '<div class="flash '+(o.flash?o.flash.k:'')+'">'+(o.flash?o.flash.text:'&nbsp;')+'</div>';
+  card.appendChild(head);
+  const tabs = h('<div class="tabs"><button data-v="enemy">🎯 '+o.enemyTab+'</button><button data-v="own">🚢 Мої кораблі'+(o.ownAlert?'<span class="dot"></span>':'')+'</button></div>');
+  card.appendChild(tabs);
+  const view = enemyView(o.enemyShips, o.D, o.me);
+  const act = o.onAct && ((i, d) => {
+    if(holding()) return;
+    if(WEAPON==='shot' && /\b(auto|miss|hit|sunk)\b/.test(view.cls[i]||'')) return;
+    const kind = WEAPON; WEAPON = 'shot';
+    o.onAct(kind, i);
+  });
+  const enemy = boardEl(view.cls, act, false, view.badges);
+  if(WEAPON!=='shot') enemy.classList.add('aim');
+  const ew = wrap('', enemy); ew.classList.add('pane','enemy');
+  ew.insertBefore(trackerEl(o.enemyShips, o.D.shot[o.me]), enemy);
+  if(o.salvo){
+    const sv = h('<div class="salvo" title="Постріли цього ходу"></div>');
+    for(let k=0;k<o.salvo.total;k++) sv.appendChild(h('<i class="'+(k < o.salvo.total-o.salvo.left ? 'used' : '')+'"></i>'));
+    ew.insertBefore(sv, ew.firstChild);
+  }
+  if(o.weapons){
+    const wb = h('<div class="weapons"></div>');
+    const add = (k, label, avail) => {
+      const b = btn(label, WEAPON===k ? 'on' : '', () => { WEAPON = (WEAPON===k ? 'shot' : k); wb.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.k===WEAPON)); enemy.classList.toggle('aim', WEAPON!=='shot'); hint.textContent = WEAPON==='bomb' ? 'Торкнись центру — бомба вдарить хрестом у 5 клітинок' : WEAPON==='radar' ? 'Торкнись центру — радар порахує кораблі в квадраті 3×3' : ''; });
+      b.dataset.k = k; b.disabled = !avail || !o.onAct; wb.appendChild(b);
+    };
+    add('bomb', '💣 Бомба'+(o.weapons.bomb?' ×1':''), o.weapons.bomb);
+    add('radar', '📡 Радар'+(o.weapons.radar?' ×1':''), o.weapons.radar);
+    ew.appendChild(wb);
+    var hint = h('<div class="muted center" style="font-size:12px;min-height:16px;margin-top:2px"></div>');
+    ew.appendChild(hint);
+  }
+  const ow = wrap('', boardEl(o.ownCls, null)); ow.classList.add('pane','own');
+  ew.insertBefore(h('<div class="btitle wide-only">🎯 '+o.enemyTab+'</div>'), ew.firstChild);
+  ow.insertBefore(h('<div class="btitle wide-only">🚢 Мої кораблі</div>'), ow.firstChild);
+  const boards = h('<div class="boards"></div>'); boards.append(ew, ow);
+  card.appendChild(boards);
+  if(o.extra) card.appendChild(h(o.extra));
+  if(o.buttons && o.buttons.length){ const row = h('<div class="row" style="margin-top:8px"></div>'); o.buttons.forEach(b => row.appendChild(b)); card.appendChild(row); }
+  app.innerHTML=''; app.appendChild(card);
+  const setShown = v => { card.classList.remove('show-enemy','show-own'); card.classList.add('show-'+v); tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v===v)); };
+  tabs.querySelectorAll('button').forEach(b => b.onclick = () => { OVERRIDE = b.dataset.v; setShown(b.dataset.v); });
+  setShown(OVERRIDE || auto);
+  return card;
+}
+function turnHead(D, me, names, extraFirst){
+  if(D.turn===me){
+    if(extraFirst) return '<div class="status my">'+extraFirst+'</div>';
+    return '<div class="status my">Твій хід — стріляй!</div>';
+  }
+  return '<div class="status their">'+(extraFirst || 'Стріляє '+esc(names[1-me])+'<span class="thinking">…</span>')+'</div>';
+}
+function salvoInfo(D, rules, me){ return rules.mode==='salvo' && D.winner===null && D.turn===me ? { total: D.budget, left: D.budget - D.spent } : null; }
+function weaponInfo(D, rules, me){ return weaponsOn(rules) ? { bomb: !D.used[me].bomb, radar: !D.used[me].radar } : null; }
+
+const RULES_HTML = `<details><summary>Правила</summary><ul class="rules">
+<li>Поле 10×10, стовпці А–И, рядки 1–10. Флот: 1 корабель на 4 клітинки, 2 — на 3, 3 — на 2, 4 — на 1.</li>
+<li>Кораблі стоять по горизонталі або вертикалі й не торкаються один одного навіть кутами.</li>
+<li><b>Класика:</b> влучив — стріляєш ще, промахнувся — хід суперника.</li>
+<li><b>Залп:</b> за хід стільки пострілів, скільки у тебе живих кораблів. Втрачаєш кораблі — слабшає залп!</li>
+<li><b>Суперзброя</b> (у Класиці): раз за гру 💣 бомба б'є хрестом у 5 клітинок, а 📡 радар показує, скільки клітинок з кораблями в квадраті 3×3. Радар забирає хід.</li>
+<li>Звання дають за перемоги над комп'ютером: «Легкий» — 1 очко, «Хитрий» — 2.</li></ul></details>`;
+
+// ---------- placement screen ----------
+function placementScreen(title, ships, onDone, onBack){
+  let horiz = true, pick = null, msg = '';
+  ships = ships.map(s=>s.slice());
+  const isH = s => s.length===1 || Math.abs(s[1]-s[0])===1;
+  const nextSize = () => { const left = remainingSizes(ships); if(!left.length) return 0; return (pick && left.includes(pick)) ? pick : Math.max(...left); };
+  let cells = [], boardNode = null;
+  function paint(ghost, ghostOk, sel, hide){
+    const cls = ownView(hide ? ships.filter(x => x!==hide) : ships, [], []);
+    const g = new Set(ghost||[]);
+    cells.forEach((d, i) => {
+      let k = 'c '+(cls[i]||'');
+      if(g.has(i)){ k = 'c'+(ghost.length>1 ? hull(ghost, i) : ' h1')+(ghostOk ? ' gok' : ' gbad'); }
+      if(sel && sel.includes(i)) k += ' sel';
+      d.className = k;
+    });
+  }
+  function draw(){
+    app.innerHTML='';
+    const size = nextSize();
+    const card = h('<div class="card narrow center placing"></div>');
+    card.appendChild(h('<h2 style="font-size:19px;margin:0 0 4px">'+title+'</h2>'));
+    // fleet chips: tap to choose which ship goes next
+    const f = h('<div class="fleet"></div>');
+    const left = remainingSizes(ships), counts = {}; left.forEach(x => counts[x]=(counts[x]||0)+1);
+    const seen = {};
+    FLEET.forEach(sz => {
+      seen[sz] = (seen[sz]||0)+1;
+      const placed = seen[sz] > (counts[sz]||0);
+      const chip = h('<button class="fship chip'+(placed?' done':'')+(!placed && sz===size && seen[sz]===1 ? ' next' : '')+'" aria-label="Корабель на '+sz+'">'+'<i></i>'.repeat(sz)+'</button>');
+      chip.disabled = placed;
+      chip.onclick = () => { pick = sz; msg=''; draw(); };
+      f.appendChild(chip);
+    });
+    card.appendChild(f);
+    card.appendChild(h('<div class="ptips">'+(size
+      ? '<span>👆 Торкнись поля — поставити</span><span>🔄 Торкнись корабля — повернути</span><span>✋ Перетягни — пересунути</span>'
+      : '<b>Усі 10 кораблів на місці! 🎉</b> Можна ще пересувати й повертати.')+'</div>'));
+    card.appendChild(h('<div class="err">'+msg+'</div>'));
+    // board built once per draw; ghosts repaint classes in place
+    boardNode = boardEl(ownView(ships, [], []), null);
+    boardNode.classList.add('placeboard');
+    cells = [...boardNode.querySelectorAll('.c')];
+    cells.forEach((d,i) => d.dataset.i = i);
+    const bw = h('<div class="boards"></div>'); bw.appendChild(boardNode); card.appendChild(bw);
+    const row = h('<div class="prow"></div>');
+    if(onBack) row.appendChild(btn('←', 'alt', onBack));
+    row.appendChild(btn(horiz ? '→ Горизонтально' : '↓ Вертикально', 'alt', () => { horiz=!horiz; msg=''; draw(); }));
+    row.appendChild(btn('🎲 Випадково', 'alt', () => { ships = randomFleet(); msg=''; draw(); }));
+    row.appendChild(btn('🗑', 'alt', () => { ships=[]; msg=''; draw(); }));
+    const done = btn('Готово ✓', 'go', () => onDone(ships));
+    done.disabled = !!size;
+    row.appendChild(done);
+    card.appendChild(row);
+    app.appendChild(card);
+    wire(size);
+  }
+  function cellAt(x, y){ const el = document.elementFromPoint(x, y); const c = el && el.closest && el.closest('.placeboard .c'); return c ? Number(c.dataset.i) : null; }
+  function wire(size){
+    let drag = null;   // {ship, grab, moved, ghost, ok}
+    const nextGhost = i => { const cs = shipCells(fitStart(i, size, horiz), size, horiz); return { cs, ok: canPlace(ships, cs) }; };
+    boardNode.addEventListener('pointerdown', e => {
+      const i = cellAt(e.clientX, e.clientY); if(i===null) return;
+      const s = shipAt(ships, i);
+      if(s){ drag = { ship:s, grab:i, moved:false, ghost:null, ok:false, id:e.pointerId }; try{ boardNode.setPointerCapture(e.pointerId); }catch(_){} paint(null, false, s); e.preventDefault(); }
+    });
+    boardNode.addEventListener('pointermove', e => {
+      const i = cellAt(e.clientX, e.clientY);
+      if(drag){
+        if(i===null){ drag.ghost = null; drag.out = true; drag.moved = true; paint(null, false, drag.ship); return; }
+        drag.out = false;
+        if(i!==drag.grab) drag.moved = true;
+        if(!drag.moved) return;
+        const [dr, dc] = [rc(i)[0]-rc(drag.grab)[0], rc(i)[1]-rc(drag.grab)[1]];
+        const moved = drag.ship.map(x => { const [r,c]=rc(x); return [r+dr, c+dc]; });
+        const okIn = moved.every(([r,c]) => inb(r,c));
+        const cs = okIn ? moved.map(([r,c]) => r*N+c) : null;
+        const others = ships.filter(x => x!==drag.ship);
+        drag.ghost = cs; drag.ok = !!cs && canPlace(others, cs);
+        paint(cs || [], drag.ok, null, drag.ship);
+        return;
+      }
+      if(e.pointerType==='mouse' && size){   // hover preview for the next ship
+        if(i===null || shipAt(ships, i)){ paint(); return; }
+        const g = nextGhost(i); paint(g.cs, g.ok);
+      }
+    });
+    boardNode.addEventListener('pointerleave', () => { if(!drag) paint(); });
+    const end = e => {
+      if(drag){
+        const d = drag; drag = null;
+        if(d.out){ ships.splice(ships.indexOf(d.ship),1); msg=''; draw(); return; }   // dragged off the board: remove
+        if(d.moved){
+          if(d.ok){ ships[ships.indexOf(d.ship)] = d.ghost; msg=''; }
+          else msg = 'Тут не можна: кораблі не мають торкатися';
+          draw(); return;
+        }
+        // tap on a ship: rotate around its first cell
+        const s = d.ship, first = Math.min(...s), others = ships.filter(x => x!==s);
+        if(s.length===1){ draw(); return; }
+        const cs = shipCells(fitStart(first, s.length, !isH(s)), s.length, !isH(s));
+        if(canPlace(others, cs)){ ships[ships.indexOf(s)] = cs; msg=''; }
+        else msg = 'Не повертається: заважає сусідній корабель';
+        draw(); return;
+      }
+      if(e.type==='pointercancel') return;
+      const i = cellAt(e.clientX, e.clientY);
+      if(i===null || !size || shipAt(ships, i)) return;
+      const g = nextGhost(i);
+      if(g.ok){ ships.push(g.cs); pick = null; msg=''; }
+      else msg = 'Тут не можна: кораблі не мають торкатися';
+      draw();
+    };
+    boardNode.addEventListener('pointerup', end);
+    boardNode.addEventListener('pointercancel', end);
+  }
+  draw();
+}
+function cover(text, sub, label, onGo){
+  app.innerHTML='';
+  const c = h(`<div class="cover"><div style="font-size:60px">🙈</div><div class="big">${text}</div><p style="opacity:.85">${sub||''}</p></div>`);
+  c.appendChild(btn(label, 'warn', onGo));
+  app.appendChild(c);
+}
+
+// ---------- main menu ----------
+let roomTried = false;
+const roomPromise = (window.claude && claude.use) ? claude.use('room').then(r => { roomTried = true; return r; }).catch(() => { roomTried = true; return null; }) : Promise.resolve(null).then(()=>{roomTried=true; return null;});
+
+function rulesPicker(onChange){
+  const box = h('<div class="settings"></div>');
+  function draw(){
+    box.innerHTML = '<div class="sec-title">Правила</div>';
+    const seg = h('<div class="seg2" role="tablist"></div>');
+    [['classic','🎯 Класика'],['salvo','💥 Залп']].forEach(([k,t]) => {
+      seg.appendChild(btn(t, RULES.mode===k ? 'on' : '', () => { RULES.mode = k; lsSet('sb-rules', RULES); draw(); onChange && onChange(); }));
+    });
+    box.appendChild(seg);
+    box.appendChild(h('<div class="sec-note">'+(RULES.mode==='classic' ? 'Влучив — стріляєш ще раз. Промахнувся — хід суперника.' : 'За хід стільки пострілів, скільки у тебе живих кораблів.')+'</div>'));
+    const on = RULES.weapons && RULES.mode==='classic';
+    const sw = h('<button class="sw'+(RULES.mode!=='classic' ? ' off' : '')+'" role="switch" aria-checked="'+on+'"><span class="sw-tx"><b>Суперзброя</b><small>'+(RULES.mode==='classic' ? 'по одній на гру: бомба б\'є хрестом, радар шукає кораблі' : 'доступна лише в Класиці')+'</small></span><span class="tg'+(on?' on':'')+'"></span></button>');
+    sw.disabled = RULES.mode!=='classic';
+    sw.onclick = () => { RULES.weapons = !RULES.weapons; lsSet('sb-rules', RULES); draw(); onChange && onChange(); };
+    box.appendChild(sw);
+  }
+  draw();
+  return box;
+}
+function modeBtn(id, icon, title, sub, cls){
+  return '<button id="'+id+'" class="mode '+(cls||'')+'"><span class="ic">'+icon+'</span><span class="tx"><b>'+title+'</b><small>'+sub+'</small></span><span class="arr">›</span></button>';
+}
+function menu(){
+  stopOnline();
+  CP = null; HOLD = null; WEAPON = 'shot';
+  app.innerHTML='';
+  const saved = lsGet('sb-hotseat');
+  const canResume = saved && saved.v===2 && saved.phase!=='over' && saved.phase!=='setup0';
+  const card = h('<div class="card narrow menu"></div>');
+  card.appendChild(h('<div class="sec-title">Як граємо?</div>'));
+  const modes = h('<div class="modes">'
+    + modeBtn('cpu', '🤖', 'Проти комп\'ютера', 'граєш сам і заробляєш звання', 'go')
+    + (canResume ? modeBtn('hsc', '↻', 'Продовжити гру', esc(saved.names[0])+' проти '+esc(saved.names[1]), 'warn') : '')
+    + modeBtn('hs', '👨‍👦', 'Удвох на одному пристрої', 'передаєте планшет одне одному')
+    + modeBtn('ol', '📲', 'Удвох на двох пристроях', 'кожен зі свого телефона чи планшета')
+    + '</div>');
+  card.appendChild(modes);
+  card.appendChild(h('<p id="olnote" class="muted center" style="margin:0 0 6px"></p>'));
+  card.appendChild(rulesPicker());
+  card.appendChild(h(RULES_HTML));
+  app.appendChild(card);
+  card.querySelector('#hs').onclick = () => hotseatStart();
+  card.querySelector('#cpu').onclick = () => cpuStart();
+  const c = card.querySelector('#hsc'); if(c) c.onclick = () => {
+    HS = saved;
+    if(HS.phase==='play'){ const D = hsDerive(); if(D.winner===null) HS.viewer = D.turn; HS.phase = D.winner===null ? 'cover' : 'play'; }
+    hsSave(); hsRoute();
+  };
+  const ol = card.querySelector('#ol'), note = card.querySelector('#olnote');
+  if(!roomTried){ ol.disabled = true; note.textContent = 'Підключаю режим для двох пристроїв…'; }
+  roomPromise.then(r => {
+    if(!document.body.contains(ol)) return;
+    ol.disabled = !r;
+    if(!r && !window.claude){ ol.style.display = 'none'; note.textContent = ''; return; }   // standalone copy (e.g. GitHub Pages): no two-device link
+    note.textContent = r ? '' : 'Гра на двох пристроях працює, коли сторінку відкрито на claude.ai з вашим входом.';
+  });
+  ol.onclick = () => onlineLobby();
+}
+
+// =====================================================================
+// HOT-SEAT MODE
+// =====================================================================
+let HS = null;
+function hsSave(){ lsSet('sb-hotseat', HS); }
+function hsDerive(){ return derive(HS.ships, HS.actions, HS.rules, HS.starter); }
+function hotseatStart(){
+  app.innerHTML='';
+  const card = h(`<div class="card narrow center"><h2>Хто грає?</h2>
+    <label for="n1">Гравець 1</label><input id="n1" maxlength="16" value="Тато">
+    <label for="n2">Гравець 2</label><input id="n2" maxlength="16" value="Син">
+    <p class="muted" style="margin-top:12px">Правила: <b>${rulesText(RULES)}</b> (змінюються в меню)</p>
+    <div class="row" style="margin-top:10px"><button class="alt" id="bk">← Назад</button><button class="go" id="st">Далі</button></div></div>`);
+  app.appendChild(card);
+  card.querySelector('#bk').onclick = menu;
+  card.querySelector('#st').onclick = () => {
+    const a = card.querySelector('#n1').value.trim() || 'Гравець 1';
+    const b = card.querySelector('#n2').value.trim() || 'Гравець 2';
+    HS = { v:2, names:[a,b], rules:{...RULES}, ships:[[],[]], actions:[], starter:0, viewer:0, phase:'setup0' };
+    hsSave(); hsRoute();
+  };
+}
+function hsRoute(){
+  const H = HS;
+  if(H.phase==='setup0'){
+    placementScreen('Розстав кораблі, '+esc(H.names[0]), H.ships[0], ships => { H.ships[0]=ships; H.phase='pass1'; hsSave(); hsRoute(); }, () => { lsDel('sb-hotseat'); menu(); });
+  } else if(H.phase==='pass1'){
+    cover('Передай пристрій: '+esc(H.names[1]), esc(H.names[0])+', не підглядай 🙂', 'Я '+esc(H.names[1])+' — готовий', () => { H.phase='setup1'; hsSave(); hsRoute(); });
+  } else if(H.phase==='setup1'){
+    placementScreen('Розстав кораблі, '+esc(H.names[1]), H.ships[1], ships => {
+      H.ships[1]=ships; H.starter = Math.random()<.5?0:1; H.viewer = H.starter; H.phase='cover'; H.firstDraw=true; hsSave(); hsRoute();
+    });
+  } else if(H.phase==='cover'){
+    const t = H.viewer, D = hsDerive();
+    let intro = H.firstDraw ? 'Жереб кинуто: першим стріляє '+esc(H.names[t])+'!' : 'Суперник не дивиться? 🙂';
+    // what the other player did since this player's last action
+    const theirs = []; for(let k=D.log.length-1; k>=0 && D.log[k].by!==t; k--) theirs.unshift(D.log[k]);
+    if(!H.firstDraw && theirs.length){
+      const hits = theirs.filter(e => e.res==='hit' || e.res==='sunk').length, sunk = theirs.reduce((a,e) => a+(e.sunk||0), 0);
+      intro = theirs.length <= 3
+        ? esc(H.names[1-t])+':<br><b>'+theirs.map(e => entryText(e)).join('<br>')+'</b>'
+        : esc(H.names[1-t])+' зробив '+theirs.length+' '+plural(theirs.length,'постріл','постріли','пострілів')+':<br><b>'+(hits ? hits+' '+plural(hits,'влучання','влучання','влучань')+(sunk ? ', потоплено '+sunk : '') : 'усі мимо 🙂')+'</b>';
+    }
+    cover('Хід: '+esc(H.names[t]), intro, 'Я '+esc(H.names[t])+' — показати поле', () => { H.phase='play'; H.firstDraw=false; H.lastSeen = D.log.length; hsSave(); hsRoute(); });
+  } else hsPlay();
+}
+function hitByOpponentLastTurn(log, upto, o){
+  for(let k = upto-1; k >= 0 && log[k].by===o; k--) if(log[k].res==='hit' || log[k].res==='sunk') return true;
+  return false;
+}
+function hsPlay(){
+  const H = HS, D = hsDerive(), t = H.viewer, o = 1-t;
+  const over = D.winner!==null;
+  const waitingPass = !over && D.turn!==t;
+  const mineEntries = D.log.slice(H.lastSeen||0).filter(e => e.by===t);
+  let head;
+  if(over) head = '<div class="win">🏆 Переміг '+esc(H.names[D.winner])+'!</div>'+scoreLine(H.names[0], H.names[1]);
+  else if(waitingPass) head = '<div class="status their">Хід переходить до '+esc(H.names[o])+'</div>';
+  else head = '<div class="status my">Стріляє '+esc(H.names[t])+'</div>';
+  const buttons = [];
+  if(waitingPass) buttons.push(btn('Передати хід: '+esc(H.names[o])+' →', 'warn', () => { H.viewer = o; H.phase='cover'; hsSave(); hsRoute(); }));
+  if(over){
+    buttons.push(btn('Грати ще раз', 'go', () => { HS = { v:2, names:H.names.slice(), rules:{...RULES}, ships:[[],[]], actions:[], starter:0, viewer:0, phase:'setup0' }; hsSave(); hsRoute(); }));
+    const show = btn('Кораблі '+esc(H.names[o]), 'alt', () => show.replaceWith(wrap('Кораблі '+esc(H.names[o]), boardEl(ownView(H.ships[o], D.shot[t], []), null, true))));
+    if(D.winner===t) buttons.push(show);
+  }
+  buttons.push(btn('Меню', 'alt', menu));
+  const lastMine = mineEntries[mineEntries.length-1];
+  battle({
+    head, flash: flashOf(lastMine) || {k:'', text:'<span style="font-size:16px;color:#5b6b7a">Обери клітинку на полі суперника</span>'},
+    auto:'enemy', enemyTab: esc(H.names[o]), enemyShips: H.ships[o], D, me:t,
+    onAct: (over || waitingPass) ? null : ((kind, cell) => {
+      H.actions.push({by:t, kind, cell});
+      const D2 = hsDerive();
+      if(D2.valid < H.actions.length){ H.actions.pop(); return; }
+      entrySound(D2.log[D2.log.length-1]);
+      if(D2.winner!==null){ addWin(H.names[D2.winner], H.names[0], H.names[1]); setTimeout(()=>{ sound('win'); confetti(); }, 600); }
+      hsSave(); hsPlay();
+    }),
+    ownCls: ownView(H.ships[t], D.shot[o], D.last[o]),
+    ownAlert: !over && hitByOpponentLastTurn(D.log, H.lastSeen||0, o),
+    weapons: over ? null : weaponInfo(D, H.rules, t), salvo: salvoInfo(D, H.rules, t),
+    extra: over ? statsHtml(HS.ships, D, H.names) : '',
+    buttons
+  });
+}
+
+// =====================================================================
+// VS COMPUTER
+// =====================================================================
+let CP = null;
+const BOT = 'Комп\'ютер';
+function cpuStart(){
+  app.innerHTML='';
+  const last = lsGet('sb-cpu-name') || '';
+  const card = h(`<div class="card narrow center"><h2>Гра проти комп'ютера</h2>
+    <label for="nm">Твоє ім'я</label><input id="nm" maxlength="16" value="${esc(last)}" placeholder="Як тебе звати?">
+    <p class="rank" id="rk"></p>
+    <p class="muted">Правила: <b>${rulesText(RULES)}</b> (змінюються в меню)</p>
+    <p style="margin-top:10px"><b>Наскільки сильний комп'ютер?</b></p>
+    <div class="row"><button class="alt" id="ez">🙂 Легкий<br><span style="font-weight:400;font-size:13px">+1 очко за перемогу</span></button><button id="hd">🧠 Хитрий<br><span style="font-weight:400;font-size:13px">+2 очки за перемогу</span></button></div>
+    <div class="row" style="margin-top:8px"><button class="alt" id="bk">← Назад</button></div></div>`);
+  app.appendChild(card);
+  const nm = card.querySelector('#nm'), rk = card.querySelector('#rk');
+  const showRank = () => { const n = nm.value.trim(); rk.innerHTML = n ? rankLine(rankInfo(n.slice(0,16))) : ''; };
+  nm.oninput = showRank; showRank();
+  card.querySelector('#bk').onclick = menu;
+  const go = smart => {
+    const name = (nm.value.trim() || 'Гравець').slice(0,16);
+    lsSet('sb-cpu-name', name);
+    CP = { name, smart, rules:{...RULES}, ships:[null, randomFleet()], actions:[], starter: Math.random()<.5?0:1, busy:false, phase:'setup' };
+    placementScreen('Розстав кораблі, '+esc(name), [], cpuStartPlay, cpuStart);
+  };
+  card.querySelector('#ez').onclick = () => go(false);
+  card.querySelector('#hd').onclick = () => go(true);
+}
+function cpuDerive(){ return derive(CP.ships, CP.actions, CP.rules, CP.starter); }
+function cpuStartPlay(ships){
+  CP.ships[0]=ships; CP.phase='play';
+  cpuPlay(); if(cpuDerive().turn===1) cpuMove(1300);
+}
+// computer's choice: finish wounded ships, use radar hints, otherwise hunt on a diagonal pattern
+function aiChoose(D, smart, rules){
+  const target = CP.ships[0], set = D.shot[1], blocked = new Set(set);
+  target.forEach(s => { if(isSunk(s,set)) s.forEach(i => neighbors(i).forEach(n => blocked.add(n))); });
+  const open = []; for(let i=0;i<N*N;i++) if(!blocked.has(i)) open.push(i);
+  const rnd = a => a[Math.floor(Math.random()*a.length)];
+  const wounded = [...set].filter(i => { const s = shipAt(target,i); return s && !isSunk(s,set); });
+  if(wounded.length && (smart || Math.random()<.65)){
+    let cand = [];
+    const rows = new Set(wounded.map(i=>rc(i)[0])), cols = new Set(wounded.map(i=>rc(i)[1]));
+    if(wounded.length>1 && rows.size===1){ const r = rc(wounded[0])[0], cs = wounded.map(i=>rc(i)[1]); cand = [Math.min(...cs)-1, Math.max(...cs)+1].filter(c=>c>=0&&c<N).map(c=>r*N+c); }
+    else if(wounded.length>1 && cols.size===1){ const c = rc(wounded[0])[1], rs = wounded.map(i=>rc(i)[0]); cand = [Math.min(...rs)-1, Math.max(...rs)+1].filter(r=>r>=0&&r<N).map(r=>r*N+c); }
+    else wounded.forEach(i => { const [r,c]=rc(i); [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([a,b]) => { if(inb(a,b)) cand.push(a*N+b); }); });
+    cand = cand.filter(i => !blocked.has(i));
+    if(cand.length) return {kind:'shot', cell:rnd(cand)};
+  }
+  // radar areas that still hide ship cells: only what the radar said minus hits made there since the scan
+  const hinted = [];
+  D.radars[1].forEach(r => {
+    const pre = new Set(r.pre);
+    const found = r.area.filter(i => set.has(i) && !pre.has(i) && shipAt(target,i)).length;
+    if(r.count - found > 0) r.area.forEach(i => { if(!blocked.has(i)) hinted.push(i); });
+  });
+  const w = weaponInfo(D, rules, 1);
+  if(w && smart && w.radar && open.length < 60 && Math.random() < .5){
+    // scan the 3×3 block with the most unknown cells
+    let best = null, bestN = -1;
+    open.forEach(i => { const n = squareArea(i).filter(x => !blocked.has(x)).length; if(n > bestN){ bestN = n; best = i; } });
+    if(best!==null) return {kind:'radar', cell:best};
+  }
+  if(hinted.length && (smart || Math.random() < .5)) return {kind:'shot', cell:rnd(hinted)};
+  if(w && w.bomb && Math.random() < (smart ? .3 : .15)){
+    const good = open.filter(i => plusArea(i).filter(x => !blocked.has(x)).length >= 4);
+    if(good.length) return {kind:'bomb', cell:rnd(good)};
+  }
+  if(smart){
+    const k = Math.min(...target.filter(s => !isSunk(s,set)).map(s => s.length));
+    if(k > 1){ const par = open.filter(i => { const [r,c]=rc(i); return (r+c)%k===0; }); if(par.length) return {kind:'shot', cell:rnd(par)}; }
+  }
+  return {kind:'shot', cell:rnd(open)};
+}
+function cpuAct(by, kind, cell){
+  CP.actions.push({by, kind, cell});
+  const D = cpuDerive();
+  if(D.valid < CP.actions.length){ CP.actions.pop(); return null; }
+  const e = D.log[D.log.length-1];
+  entrySound(e);
+  if(D.winner!==null && CP.phase!=='over'){
+    CP.phase='over';
+    addWin(D.winner===0 ? CP.name : BOT, CP.name, BOT);
+    if(D.winner===0){
+      const before = rankInfo(CP.name);
+      addRankPts(CP.name, CP.smart ? 2 : 1);
+      const after = rankInfo(CP.name);
+      CP.promoted = after.idx > before.idx ? after : null;
+      setTimeout(()=>{ sound('win'); confetti(); }, 600);
+    } else setTimeout(()=>sound('lose'), 600);
+  }
+  return D;
+}
+function cpuMove(delay){
+  const mine = CP;
+  CP.busy = true; cpuPlay();
+  setTimeout(() => {
+    if(CP!==mine || CP.phase!=='play') return;
+    let D = cpuDerive();
+    if(D.turn!==1 || D.winner!==null){ CP.busy=false; cpuPlay(); return; }
+    const ch = aiChoose(D, CP.smart, CP.rules);
+    D = cpuAct(1, ch.kind, ch.cell) || cpuDerive();
+    if(D.winner===null && D.turn===1){ cpuPlay(); cpuMove(1000); return; }
+    CP.busy = false;
+    if(D.winner===null) holdView('own', 1400, cpuPlay);   // let the player see where the computer shot
+    cpuPlay();
+  }, delay||1000);
+}
+function cpuPlay(){
+  if(!CP) return;
+  const D = cpuDerive(), over = D.winner!==null;
+  const names = [CP.name, BOT];
+  let head;
+  const fresh = !D.log.length;
+  if(over){
+    head = '<div class="win">'+(D.winner===0 ? '🏆 Ти переміг!' : '🤖 Переміг комп\'ютер')+'</div>';
+    const r = rankInfo(CP.name);
+    head += '<div class="rank">'+(CP.promoted ? '🎉 Нове звання: ' : '')+rankLine(r)+'</div>';
+  } else if(D.turn===0 && !CP.busy && !holding()) head = turnHead(D, 0, names, fresh ? 'Жереб: ти стріляєш першим!' : null);
+  else head = '<div class="status their">'+(fresh ? 'Жереб: першим стріляє 🤖 комп\'ютер' : '🤖 Комп\'ютер цілиться')+'<span class="thinking">…</span></div>';
+  const last = D.log[D.log.length-1];
+  const buttons = [];
+  if(over){
+    buttons.push(btn('Грати ще раз', 'go', () => {
+      const p = CP;
+      CP = { name:p.name, smart:p.smart, rules:{...RULES}, ships:[null, randomFleet()], actions:[], starter: Math.random()<.5?0:1, busy:false, phase:'setup' };
+      placementScreen('Розстав кораблі, '+esc(p.name), p.ships[0], cpuStartPlay, menu);
+    }));
+    if(D.winner===1){
+      const show = btn('Де були кораблі 🤖?', 'alt', () => show.replaceWith(wrap('Кораблі комп\'ютера', boardEl(ownView(CP.ships[1], D.shot[0], []), null, true))));
+      buttons.push(show);
+    }
+  }
+  buttons.push(btn('Меню', 'alt', () => { CP=null; menu(); }));
+  const canAct = !over && D.turn===0 && !CP.busy;
+  battle({
+    head, flash: flashOf(last, last ? (last.by===0 ? 'Ти' : '🤖') : '') || {k:'', text:'<span style="font-size:16px;color:#5b6b7a">Обери клітинку на полі комп\'ютера</span>'},
+    auto: over ? (D.winner===0 ? 'enemy' : 'own') : ((D.turn===1 || CP.busy) ? 'own' : 'enemy'),
+    enemyTab: 'Комп\'ютер', enemyShips: CP.ships[1], D, me:0,
+    onAct: canAct ? ((kind, cell) => {
+      const D2 = cpuAct(0, kind, cell); if(!D2) return;
+      if(D2.winner===null && D2.turn===1){
+        CP.busy = true;
+        holdView('enemy', 900, cpuPlay);   // show the result first, then switch to your board
+        cpuPlay(); cpuMove(1500);
+      } else cpuPlay();
+    }) : null,
+    ownCls: ownView(CP.ships[0], D.shot[1], D.last[1]),
+    weapons: over ? null : weaponInfo(D, CP.rules, 0), salvo: salvoInfo(D, CP.rules, 0),
+    extra: over ? statsHtml(CP.ships, D, ['Ти', BOT]) + scoreLine(CP.name, BOT) : '',
+    buttons
+  });
+}
+
+// =====================================================================
+// TWO-DEVICE MODE (named room + presence carrying each player's absolute state)
+// =====================================================================
+let ON = null;
+function stopOnline(){
+  banner.innerHTML = '';
+  if(!ON) return;
+  ON.unsub.forEach(u => { try{u();}catch(e){} });
+  if(ON.timer) clearInterval(ON.timer);
+  try{ ON.g && ON.g.leave(); }catch(e){}
+  ON = null;
+}
+function onlineLobby(err){
+  stopOnline();
+  app.innerHTML='';
+  const lastName = lsGet('sb-name') || '';
+  const card = h(`<div class="card narrow center"><h2>Гра на двох пристроях</h2>
+    <label for="nm">Твоє ім'я</label><input id="nm" maxlength="16" value="${esc(lastName)}" placeholder="Наприклад, Тато">
+    <p class="muted" style="margin-top:12px">Один створює гру з правилами нижче й називає код, другий вводить цей код.</p>
+    <div id="rp"></div>
+    <div class="row"><button id="cr" class="go">Створити гру</button></div>
+    <label for="cd">або код гри</label><input id="cd" inputmode="numeric" maxlength="4" placeholder="1234" style="max-width:160px;text-align:center;letter-spacing:6px">
+    <div class="row" style="margin-top:6px"><button id="jn">Приєднатися</button></div>
+    <p class="flash miss" style="font-size:15px">${err||''}</p>
+    <button class="alt" id="bk">← Назад</button></div>`);
+  card.querySelector('#rp').appendChild(rulesPicker());
+  app.appendChild(card);
+  const name = () => (card.querySelector('#nm').value.trim() || 'Гравець').slice(0,16);
+  card.querySelector('#bk').onclick = menu;
+  card.querySelector('#cr').onclick = () => { lsSet('sb-name', name()); onlineJoin(String(1000+Math.floor(Math.random()*9000)), name(), true); };
+  card.querySelector('#jn').onclick = () => {
+    const code = card.querySelector('#cd').value.replace(/\D/g,'');
+    if(code.length!==4){ onlineLobby('Код має бути з 4 цифр'); return; }
+    lsSet('sb-name', name()); onlineJoin(code, name(), false);
+  };
+}
+function freshMe(name, round, id, creator, rules){ return { id: id || tabId(), name, round: round||1, ships: null, readyAt: 0, acts: [], creator: !!creator, rules: rules || {...RULES} }; }
+async function onlineJoin(code, name, creator){
+  app.innerHTML = '<div class="cover"><div class="big">Підключаюсь…</div></div>';
+  const room = await roomPromise;
+  if(!room){ onlineLobby('Не вдалося підключитися'); return; }
+  let g;
+  try{ g = await room.join('seabattle-'+code); }
+  catch(e){ onlineLobby('Не вдалося підключитися ('+(e&&e.code||'помилка')+')'); return; }
+  // saved games for this code, one per player id: {id: me}
+  const key = 'sb-on2-'+code;
+  let saved = lsGet(key); if(!saved || typeof saved !== 'object') saved = {};
+  let me = null, adopted = false, candidates = [];
+  const sid = sessId();
+  if(sid && saved[sid]) me = saved[sid];                      // same tab reloaded
+  else if(!sid){                                              // tab/app was restarted: pick up a saved game on this device
+    candidates = Object.values(saved).filter(x => x && typeof x.id==='string').sort((a,b) => (b.ts||0)-(a.ts||0));
+    if(candidates.length){ me = candidates.shift(); adopted = true; setSessId(me.id); }
+  }
+  if(!me) me = freshMe(name, 1, null, creator);
+  me.name = name;
+  ON = { code, g, key, unsub:[], me, adopted, candidates, opp:null, connected: g.connected(), screen:null, flash:null, seen:0 };
+  ON.unsub.push(g.onPeers(ch => onPeers(ch.peers), e => {}));
+  ON.unsub.push(g.onConnection(c => { if(!ON) return; ON.connected = c; if(c) push(); renderOnline(); }, e => {}));
+  ON.timer = setInterval(() => { if(ON) push(); }, 4000);
+  push();
+  renderOnline();
+}
+function packMe(){
+  const m = ON.me;
+  return { i:m.id, n:m.name, r:m.round, t:m.readyAt, c: m.creator ? 1 : 0, m: m.rules.mode==='salvo' ? 's' : 'c', w: m.rules.weapons ? 1 : 0,
+    s: m.ships ? m.ships.map(s=>s.join('.')).join('|') : null,
+    f: m.acts.map(x => x.n+':'+x.kind[0]+':'+x.cell).join(',') };
+}
+function unpack(p){
+  if(!p || typeof p!=='object' || typeof p.i!=='string') return null;
+  const parseInts = s => s.split('.').map(Number).filter(n => Number.isInteger(n) && n>=0 && n<N*N);
+  const ships = (typeof p.s==='string' && p.s) ? p.s.split('|').map(parseInts) : null;
+  const kinds = {s:'shot', b:'bomb', r:'radar'};
+  const acts = (typeof p.f==='string' && p.f) ? p.f.split(',').map(x => { const [n,k,c] = x.split(':'); return { n:Number(n), kind:kinds[k]||'shot', cell:Number(c) }; }).filter(x => Number.isInteger(x.n) && Number.isInteger(x.cell)) : [];
+  return { id:p.i, name: String(p.n||'Суперник').slice(0,16), round: Number(p.r)||1, readyAt: Number(p.t)||0, creator: p.c===1,
+    rules: { mode: p.m==='s' ? 'salvo' : 'classic', weapons: p.w===1 }, ships, acts };
+}
+function push(){
+  if(!ON) return;
+  let saved = lsGet(ON.key); if(!saved || typeof saved !== 'object') saved = {};
+  saved[ON.me.id] = Object.assign({}, ON.me, { ts: Date.now() });
+  const keep = {}; Object.keys(saved).sort((a,b) => saved[b].ts - saved[a].ts).slice(0, 4).forEach(k => keep[k] = saved[k]);
+  lsSet(ON.key, keep);
+  try{ ON.g.presence({ sb: packMe() }).catch(()=>{}); }catch(e){}
+}
+function sameRoundOpp(){
+  const r = ON.me.round;
+  if(ON.opp && ON.opp.round===r) return ON.opp;
+  if(ON.oppSame && ON.oppSame.round===r) return ON.oppSame;
+  return null;
+}
+// the game's rules come from whoever created it (the other player follows)
+function gameRules(op){
+  const me = ON.me;
+  if(op && op.creator && !me.creator) return op.rules;
+  if(me.creator && !(op && op.creator)) return me.rules;
+  if(op && op.id < me.id) return op.rules;
+  return me.rules;
+}
+function hashStr(t){ let x = 2166136261; for(let k=0;k<t.length;k++){ x ^= t.charCodeAt(k); x = Math.imul(x, 16777619); } return x>>>0; }
+// replays both players' actions; index 0 = me, 1 = opponent
+function replay(){
+  const me = ON.me, op = sameRoundOpp();
+  if(!me.ships || !op || !op.ships) return null;
+  const ids = [me.id, op.id].sort();
+  const starterId = ids[hashStr(ids.join('|')+'#'+me.round) % 2];   // fair coin both devices agree on
+  const all = me.acts.map(x => ({...x, by:0})).concat(op.acts.map(x => ({...x, by:1}))).sort((a,b) => a.n-b.n);
+  const seq = []; for(const a of all){ if(a.n !== seq.length) break; seq.push(a); }
+  const rules = gameRules(op);
+  const D = derive([me.ships, op.ships], seq, rules, starterId===me.id ? 0 : 1);
+  D.rules = rules; D.op = op; D.count = D.valid; D.complete = D.valid === all.length;
+  return D;
+}
+function onPeers(peers){
+  if(!ON) return;
+  const liveIds = new Set(peers.filter(p => !p.sameTab && p.presence && p.presence.sb).map(p => p.presence.sb.i));
+  // another open page already plays as this id (two tabs on one device): the one that picked it up from storage steps aside
+  if(ON.adopted && liveIds.has(ON.me.id)){
+    const name = ON.me.name;
+    const next = ON.candidates.filter(x => !liveIds.has(x.id))[0];
+    ON.me = next ? Object.assign(next, {name}) : freshMe(name, 1, newId());
+    ON.adopted = !!next; ON.candidates = []; ON.screen = null;
+    setSessId(ON.me.id); push();
+  }
+  const others = peers.filter(p => !p.sameTab && p.presence && p.presence.sb).map(p => unpack(p.presence.sb)).filter(s => s && s.id !== ON.me.id);
+  const pick = others.find(s => ON.opp && s.id === ON.opp.id) || others[0] || null;
+  ON.oppHere = !!pick;
+  if(pick){
+    if(pick.round > ON.me.round){
+      const R0 = replay();
+      if(R0 && R0.winner!==null) ON.rematch = pick.name;     // I'm still looking at the result: just offer
+      else { ON.me = freshMe(ON.me.name, pick.round, ON.me.id, ON.me.creator, ON.me.rules); ON.flash=null; ON.rematch=null; ON.seen=0; push(); }
+    }
+    if(pick.round === ON.me.round) ON.oppSame = pick;
+    ON.opp = pick;
+  }
+  // announce the opponent's new actions against me
+  const D = replay();
+  if(D && D.log.length > ON.seen){
+    const fresh = D.log.slice(ON.seen);
+    ON.seen = D.log.length;
+    const theirs = fresh.filter(e => e.by===1);
+    if(theirs.length){
+      const e = theirs[theirs.length-1];
+      ON.flash = flashOf(e, esc(D.op.name));
+      entrySound(e);
+      if(D.winner===null && D.turn===0) holdView('own', 1400, renderOnline);
+    }
+  }
+  renderOnline();
+}
+function renderOnline(){
+  if(!ON) return;
+  const me = ON.me, op = sameRoundOpp();
+  const conn = '<span class="pill '+(ON.connected?'on':'off')+'">'+(ON.connected?'на зв\'язку':'зв\'язок…')+'</span> <span class="pill '+(ON.oppHere?'on':'')+'">'+(ON.oppHere ? 'суперник: '+esc(ON.opp.name) : 'суперника ще немає')+'</span>';
+  const rulesNow = gameRules(ON.opp);
+  if(!me.ships){
+    banner.innerHTML = '<div class="center" style="color:var(--topink);margin:-2px 0 6px;font-size:15px">Код гри: <b style="font-size:22px;letter-spacing:3px">'+ON.code+'</b> · '+conn+'<br><span style="font-size:13px">Правила: '+rulesText(rulesNow)+'</span></div>';
+    if(ON.screen==='place') return; // don't redraw over placement in progress
+    ON.screen='place';
+    placementScreen('Розстав кораблі · гра '+ON.code, [], ships => {
+      ON.me.ships = ships; ON.me.readyAt = Date.now(); ON.me.acts=[]; ON.screen=null; ON.seen=0; push(); renderOnline();
+    }, () => menu());
+    return;
+  }
+  banner.innerHTML = '';
+  ON.screen='game';
+  const D = replay();
+  if(!D){
+    app.innerHTML='';
+    const card = h('<div class="card center"></div>');
+    card.appendChild(h('<p>Гра <b>'+ON.code+'</b> · '+conn+'</p>'));
+    card.appendChild(h('<div class="status their">Чекаємо, поки '+(ON.oppHere?esc(ON.opp.name)+' розставить кораблі':'суперник приєднається')+'…</div>'));
+    card.appendChild(h('<p>Код для суперника: <span class="code">'+ON.code+'</span></p><p class="muted">Правила: '+rulesText(rulesNow)+'</p>'));
+    card.appendChild(h('<div class="boards"></div>')).appendChild(wrap('🚢 Твої кораблі', boardEl(ownView(me.ships, [], []), null, true)));
+    const row=h('<div class="row"></div>');
+    row.appendChild(btn('Переставити кораблі', 'alt', () => { ON.me.ships=null; ON.me.readyAt=0; push(); renderOnline(); }));
+    row.appendChild(btn('Меню', 'alt', menu));
+    card.appendChild(row);
+    app.appendChild(card); return;
+  }
+  const names = [me.name, op.name];
+  const fresh = !D.log.length;
+  let head = '<div class="muted center" style="font-size:12px">Гра '+ON.code+' · '+conn+' · '+rulesText(D.rules)+'</div>';
+  if(D.winner!==null){
+    if(ON.scored !== me.round+'|'+op.id){
+      ON.scored = me.round+'|'+op.id;
+      addWin(names[D.winner], me.name, op.name);
+      if(D.winner===0) setTimeout(()=>{ sound('win'); confetti(); }, 600); else setTimeout(()=>sound('lose'), 600);
+    }
+    head += '<div class="win">'+(D.winner===0 ? '🏆 Ти переміг!' : '🏆 Переміг '+esc(op.name)+'!')+'</div>'+scoreLine(me.name, op.name)
+         + (ON.rematch ? '<div class="status my" style="font-size:16px">'+esc(ON.rematch)+' хоче ще раз — тисни «Грати ще раз»</div>' : '');
+  } else head += turnHead(D, 0, names, fresh ? (D.turn===0 ? 'Жереб: ти стріляєш першим!' : 'Жереб: першим стріляє '+esc(op.name)) : null);
+  const myTurn = D.winner===null && D.turn===0 && D.complete;
+  const buttons = [];
+  if(D.winner!==null) buttons.push(btn('Грати ще раз', 'go', () => {
+    const next = Math.max(ON.me.round+1, ON.opp ? ON.opp.round : 0);   // join the opponent's new round, never skip past it
+    ON.me = freshMe(ON.me.name, next, ON.me.id, ON.me.creator, ON.me.creator ? {...RULES} : ON.me.rules);
+    ON.flash=null; ON.rematch=null; ON.screen=null; ON.seen=0; HOLD=null; push(); renderOnline();
+  }));
+  buttons.push(btn('Меню', 'alt', menu));
+  battle({
+    head, flash: ON.flash,
+    auto: D.winner!==null ? (D.winner===0 ? 'enemy' : 'own') : (D.turn===0 ? 'enemy' : 'own'),
+    enemyTab: esc(op.name), enemyShips: op.ships, D, me:0,
+    onAct: myTurn && ON.connected ? ((kind, cell) => {
+      const D0 = replay(); if(!D0 || D0.turn!==0 || D0.winner!==null || !D0.complete) return;
+      ON.me.acts.push({ n: D0.count, kind, cell });
+      const D2 = replay();
+      if(D2.valid <= D0.valid){ ON.me.acts.pop(); return; }
+      const e = D2.log[D2.log.length-1];
+      ON.seen = D2.log.length;
+      ON.flash = flashOf(e, 'Ти');
+      entrySound(e);
+      if(D2.winner===null && D2.turn===1) holdView('enemy', 1200, renderOnline);
+      push(); renderOnline();
+    }) : null,
+    ownCls: ownView(me.ships, D.shot[1], D.last[1]),
+    weapons: D.winner!==null ? null : weaponInfo(D, D.rules, 0), salvo: salvoInfo(D, D.rules, 0),
+    extra: D.winner!==null ? statsHtml([me.ships, op.ships], D, ['Ти', op.name]) : '',
+    buttons
+  });
+}
+
+menu();
+
+// installable offline app: register the service worker (not when opened as a local file)
+if('serviceWorker' in navigator && location.protocol!=='file:'){
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+})();
+</script>
+</body>
+</html>
