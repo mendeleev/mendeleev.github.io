@@ -1,6 +1,6 @@
 // Service worker «Робо-Склад»: гра працює офлайн.
 // VERSION підставляє збірка (build.mjs): хеш вмісту гри, тож кеш оновлюється сам.
-const VERSION = "robo-sklad-c3c96ce8dd";
+const VERSION = "robo-sklad-0de2329b6d";
 const ASSETS = [
   "./",
   "index.html",
