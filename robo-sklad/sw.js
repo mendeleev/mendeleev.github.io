@@ -1,6 +1,6 @@
 // Service worker «Робо-Склад»: гра працює офлайн.
 // Під час кожного оновлення гри змінюй VERSION, щоб браузер підтягнув нові файли.
-const VERSION = "robo-sklad-v1";
+const VERSION = "robo-sklad-v2";
 const ASSETS = [
   "./",
   "index.html",
