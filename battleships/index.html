@@ -13,19 +13,21 @@
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
 :root{
-  --bg1:#0b3d63; --bg2:#0f5a8f; --sea2:#0f5a8f; --water:#d9eefb; --water-h:#bfe0f7; --line:#9cc7e6; --ship:#4a5868;
-  --hit:#e8533a; --hitbg:#ffd9d1; --sunk:#8f1d10; --miss:#6f8aa0; --ink:#0d2236; --card:#ffffff; --ok:#1f9d55; --accent:#f3b230;
+  --bg1:#0b3d63; --bg2:#0f5a8f; --sea2:#0f5a8f; --water:#d9eefb; --water-h:#bfe0f7; --line:#6fa6d2; --ship:#4a5868;
+  --hit:#d4371f; --hitbg:#d9eefb; --sunk:#5e1209; --miss:#2f5d86; --auto:#c3dbee; --autodot:#7d98b1; --ink:#0d2236; --card:#ffffff; --ok:#1f9d55; --accent:#f3b230;
   --hdr:#33516b; --scan:rgba(124,77,206,.16); --scanink:#6a3fb5; --topink:#fff;
 }
 /* "notebook" theme, like the paper printout: squared paper, pencil ships, pen marks */
 body.paper{
   --bg1:#efe9d8; --bg2:#e7dfc9; --water:#fdfdf8; --water-h:#eef3fb; --line:#a9c4e8; --ship:#5d6d8c;
-  --hit:#d23b2a; --hitbg:#fdfdf8; --sunk:#d23b2a; --miss:#2b4fa3; --hdr:#2b4fa3; --card:#fffef9; --topink:#2b3a55;
+  --hit:#d23b2a; --hitbg:#fdfdf8; --sunk:#d23b2a; --miss:#2b4fa3; --hdr:#2b4fa3; --card:#fffef9; --topink:#2b3a55; --auto:#f1f1ea; --autodot:#9aa9c8;
 }
 body.paper .board .c{border-color:var(--line)}
 body.paper .c.ship::before{background:repeating-linear-gradient(45deg,var(--ship) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 2px var(--ship)}
 body.paper .c.sunk::before{background:repeating-linear-gradient(45deg,rgba(210,59,42,.35) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 2px var(--hit)}
 body.paper .c.sunk::after,body.paper .c.hit::after{color:var(--hit);font-family:"Caveat","Comic Sans MS","Segoe Print",cursive}
+body.paper .c.hit:not(.ship)::before{display:none}
+body.paper .c.ship.hit::before{background:repeating-linear-gradient(45deg,var(--ship) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 2px var(--hit)}
 body.paper .board .h,body.paper .logo,body.paper h2{font-family:"Caveat","Comic Sans MS","Segoe Print",cursive}
 body.paper .board .h{font-size:clamp(15px,3.8vw,20px)}
 body.paper .logo{font-size:26px}
@@ -49,7 +51,8 @@ button{font:inherit;font-weight:600;border:0;border-radius:12px;padding:12px 18p
 button.alt{background:#e7eef5;color:var(--ink)}
 button.go{background:var(--ok)}
 button.warn{background:var(--accent);color:#2a1d00}
-button:disabled{opacity:.45;cursor:default}
+button:disabled{opacity:1;background:#d3dce5;color:#4f6072;cursor:default}
+.weapons button:disabled{opacity:.55;background:#e7eef5}
 input{font:inherit;font-size:18px;padding:11px 12px;border:2px solid #c9d8e5;border-radius:12px;width:100%;max-width:320px}
 label{display:block;font-weight:600;margin:10px 0 4px}
 .row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
@@ -76,20 +79,25 @@ label{display:block;font-weight:600;margin:10px 0 4px}
 .c.hv.eT::before{top:3px;border-radius:999px 999px 0 0}
 .c.hv.eB::before{bottom:3px;border-radius:0 0 999px 999px}
 .c.h1::before{border-radius:999px}
-.c.ship.hit::before{background:#d9907f}
-.c.sunk::before{background:var(--sunk)}
+.c.ship.hit::before{background:var(--hit)}
+/* sunk: dark hull with white stripes, so it differs from a live ship by pattern, not only by colour */
+.c.sunk::before{background:var(--sunk) repeating-linear-gradient(45deg,rgba(255,255,255,.28) 0 3px,transparent 3px 8px)}
+/* a hit on the enemy board: solid red disc with a white cross */
+.c.hit:not(.ship)::before{content:"";position:absolute;inset:12%;border-radius:50%;background:var(--hit);pointer-events:none}
 .c.gok::before{background:rgba(31,157,85,.55)}
 .c.gbad::before{background:rgba(232,83,58,.55)}
 .c.sel::before{box-shadow:0 0 0 3px var(--accent)}
 .c::after{position:relative;z-index:1}
-.c.miss::after,.c.auto::after{content:"";width:22%;height:22%;border-radius:50%;background:var(--miss)}
-.c.auto::after{opacity:.35}
+.c.miss::after,.c.auto::after{content:"";width:30%;height:30%;border-radius:50%;background:var(--miss)}
+.c.auto{background:var(--auto)}
+.c.auto::after{width:18%;height:18%;background:var(--autodot)}
 .c.hit{background:var(--hitbg)}
-.c.hit::after,.c.sunk::after{content:"✕";color:var(--hit);font-weight:900;font-size:clamp(14px,4vw,22px);line-height:1}
+.c.hit::after,.c.sunk::after{content:"✕";color:#fff;font-weight:900;font-size:clamp(13px,3.6vw,20px);line-height:1}
 .c.ship.hit{background:var(--water)}
 .c.sunk{background:var(--water)}
 .c.sunk::after{color:#fff}
 body.paper .c.sunk::after{color:var(--hit)}
+body.paper .c.auto{background:var(--water)}
 .c .badge{z-index:2}
 .c.scan{box-shadow:inset 0 0 0 100px var(--scan)}
 .c .badge{position:absolute;top:0;left:2px;font-size:clamp(9px,2.4vw,12px);font-weight:900;color:var(--scanink);line-height:1.1}
@@ -117,12 +125,57 @@ body.paper .c.sunk::after{color:var(--hit)}
 .battle .rank{font-size:14px;margin:0}
 .battle .row button{min-height:44px;padding:10px 16px}
 .wide-only{display:none}
-@media (min-width:820px){
+@media (min-width:740px){
   .wide-only{display:block}
   .battle .tabs{display:none}
   .battle .pane{display:flex!important}
   .battle .pane.own .board{width:min(34vw,330px)}
   .battle .pane.enemy .board{width:min(50vw,460px,calc(100vh - 250px))}
+}
+/* phone on its side: enemy board on the left at full height, status, your board and buttons on the right */
+@media (orientation:landscape) and (max-height:540px){
+  body{padding-top:calc(env(safe-area-inset-top) + 4px);padding-bottom:calc(env(safe-area-inset-bottom) + 4px)}
+  .top{position:fixed;top:calc(env(safe-area-inset-top) + 4px);right:calc(env(safe-area-inset-right) + 8px);margin:0;z-index:5;width:auto}
+  .top .logo{display:none}
+  .top button{min-height:34px;padding:4px 9px;background:rgba(11,61,99,.55)}
+  body.paper .top button{background:rgba(0,0,0,.08)}
+  #banner > div{margin:0 0 4px!important}
+  .card{margin-bottom:4px}
+  .card.battle{max-width:none;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"enemy head" "enemy own" "enemy more" "enemy btns";
+    column-gap:16px;row-gap:4px;align-items:start;padding:8px 12px}
+  .battle .tabs,.battle .wide-only{display:none!important}
+  .battle .boards{display:contents}
+  .battle .pane{display:flex!important}
+  .battle .pane.enemy{grid-area:enemy}
+  .battle .pane.own{grid-area:own}
+  .battle .head{grid-area:head;min-height:0;padding-right:96px}
+  .battle > .stats,.battle > .score{grid-area:more}
+  .battle > .row{grid-area:btns;margin-top:2px!important;justify-content:flex-start}
+  .battle .pane.enemy .board{width:min(56vw,calc(100svh - var(--lch,52px)));min-width:0}
+  .battle.armed .pane.enemy .board{--lch:108px}
+  body:has(#banner > div) .placing .board{width:calc(100svh - 110px)}
+  .battle .pane.own .board{width:min(40vw,calc(100svh - 200px));min-width:150px}
+  .battle .head{padding-right:84px}
+  body.paper .board .h{font-size:15px}
+  .battle .status{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .battle > .row button{min-height:38px;padding:6px 14px}
+  .battle .flash{font-size:17px;min-height:22px;margin:0}
+  .battle .win{font-size:26px}
+  .battle .tracker{margin:0 0 2px}
+  .weapons{margin-top:4px}
+  .weapons button{min-height:36px}
+  /* placement: board on the left, fleet, tips and buttons on the right */
+  .card.placing,.card.narrow.placing{max-width:none;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"board title" "board fleet" "board tips" "board err" "board btns";
+    column-gap:16px;align-items:start;align-content:start;padding:8px 12px;text-align:left}
+  .placing h2{grid-area:title;padding-right:96px}
+  .placing .fleet{grid-area:fleet;justify-content:flex-start}
+  .placing .ptips{grid-area:tips;flex-direction:column;align-items:flex-start;justify-content:flex-start}
+  .placing .err{grid-area:err}
+  .placing .boards{grid-area:board}
+  .placing .prow{grid-area:btns;justify-content:flex-start}
+  .placing .board{width:calc(100svh - 52px);min-width:0}
+  .cover{min-height:88svh}
+  .cover .big{margin:4px 0}
 }
 .weapons{display:flex;gap:6px;justify-content:center;margin:6px 0 0}
 .weapons button{margin:0;min-height:40px;padding:6px 10px;font-size:15px;background:#e7eef5;color:var(--ink)}
@@ -733,6 +786,7 @@ function mqttRooms(){
         try{ const d = JSON.parse(txt); if(d && typeof d.p==='object'){ peers[peer] = { presence:d.p, seen:Date.now() }; firePeers(); } }catch(e){}
       });
       c.on('close', () => { if(live) fireConn(false); });
+      c.on('error', () => {});   // mqtt.js retries by itself; just keep errors out of the console
       c.on('offline', () => { if(live) fireConn(false); });
       // first broker unreachable: try the next one
       setTimeout(() => { if(live && client===c && !everConnected && BROKERS.length > 1){ try{ c.end(true); }catch(e){} brokerIdx++; connect(); } }, 9000);
@@ -1103,7 +1157,7 @@ function onlineLobby(err){
     <p class="muted" style="margin-top:12px">Один створює гру з правилами нижче й називає код, другий вводить цей код.</p>
     <div id="rp"></div>
     <div class="row"><button id="cr" class="go">Створити гру</button></div>
-    <label for="cd">або код гри</label><input id="cd" inputmode="numeric" maxlength="4" placeholder="1234" style="max-width:160px;text-align:center;letter-spacing:6px">
+    <label for="cd">або код гри</label><input id="cd" inputmode="numeric" maxlength="6" placeholder="123456" style="max-width:200px;text-align:center;letter-spacing:6px">
     <div class="row" style="margin-top:6px"><button id="jn">Приєднатися</button></div>
     <p class="flash miss" style="font-size:15px">${err||''}</p>
     <button class="alt" id="bk">← Назад</button></div>`);
@@ -1111,21 +1165,51 @@ function onlineLobby(err){
   app.appendChild(card);
   const name = () => (card.querySelector('#nm').value.trim() || 'Гравець').slice(0,16);
   card.querySelector('#bk').onclick = menu;
-  card.querySelector('#cr').onclick = () => { lsSet('sb-name', name()); onlineJoin(String(1000+Math.floor(Math.random()*9000)), name(), true); };
+  card.querySelector('#cr').onclick = () => { lsSet('sb-name', name()); onlineJoin(newCode(), name(), true); };
   card.querySelector('#jn').onclick = () => {
     const code = card.querySelector('#cd').value.replace(/\D/g,'');
-    if(code.length!==4){ onlineLobby('Код має бути з 4 цифр'); return; }
+    if(code.length!==6 && code.length!==4){ onlineLobby('Код має бути з 6 цифр'); return; }
     lsSet('sb-name', name()); onlineJoin(code, name(), false);
   };
 }
+// 6-digit codes: 900 000 rooms on a shared public server instead of 9 000
+function newCode(){ return String(100000 + Math.floor(Math.random()*900000)); }
+// wait a moment for the room's current players; true if someone else is already in it
+function roomBusy(g){
+  return new Promise(res => {
+    let seen = false, unsub = null, done = false;
+    const finish = () => { if(done) return; done = true; try{ unsub && unsub(); }catch(e){} res(seen); };
+    try{ unsub = g.onPeers(ch => { if(ch.peers.some(p => !p.sameTab && p.presence && p.presence.sb)) { seen = true; finish(); } }, () => {}); }catch(e){}
+    const t0 = Date.now();
+    const wait = setInterval(() => {   // give the connection up to 6 s, then 1.5 s more for the room's saved messages
+      const conn = (() => { try{ return g.connected(); }catch(e){ return true; } })();
+      if(done){ clearInterval(wait); return; }
+      if((conn && Date.now()-t0 > 1500) || Date.now()-t0 > 7500){ clearInterval(wait); setTimeout(finish, conn ? 1500 : 0); }
+    }, 250);
+  });
+}
+// saved online games: keep only the 5 most recent codes
+function pruneSaved(){
+  try{
+    const keys = []; for(let k=0;k<localStorage.length;k++){ const key = localStorage.key(k); if(key && key.startsWith('sb-on2-')) keys.push(key); }
+    const ts = key => { const v = lsGet(key) || {}; return Math.max(0, ...Object.values(v).map(x => (x && x.ts) || 0)); };
+    keys.sort((a,b) => ts(b)-ts(a)).slice(5).forEach(lsDel);
+  }catch(e){}
+}
 function freshMe(name, round, id, creator, rules){ return { id: id || tabId(), name, round: round||1, ships: null, readyAt: 0, acts: [], creator: !!creator, rules: rules || {...RULES} }; }
-async function onlineJoin(code, name, creator){
+async function onlineJoin(code, name, creator, tries){
   app.innerHTML = '<div class="cover"><div class="big">Підключаюсь…</div></div>';
   const room = await roomPromise;
   if(!room){ onlineLobby('Не вдалося підключитися'); return; }
   let g;
   try{ g = await room.join('seabattle-'+code); }
   catch(e){ onlineLobby(e && e.message==='no-lib' ? 'Немає інтернету — для гри на двох пристроях потрібне з\'єднання' : 'Не вдалося підключитися ('+(e&&e.code||'помилка')+')'); return; }
+  // a new game must start in an empty room: if someone is already there, pick another code
+  if(creator && !lsGet('sb-on2-'+code) && (tries||0) < 3 && await roomBusy(g)){
+    try{ await g.leave(); }catch(e){}
+    onlineJoin(newCode(), name, true, (tries||0)+1); return;
+  }
+  pruneSaved();
   // saved games for this code, one per player id: {id: me}
   const key = 'sb-on2-'+code;
   let saved = lsGet(key); if(!saved || typeof saved !== 'object') saved = {};
@@ -1138,7 +1222,7 @@ async function onlineJoin(code, name, creator){
   }
   if(!me) me = freshMe(name, 1, null, creator);
   me.name = name;
-  ON = { code, g, key, unsub:[], me, adopted, candidates, opp:null, connected: g.connected(), screen:null, flash:null, seen:0 };
+  ON = { code, g, key, unsub:[], me, adopted, candidates, opp:null, connected: g.connected(), screen:null, flash:null, seen:0, dup: new Set(), sig:null };
   ON.unsub.push(g.onPeers(ch => onPeers(ch.peers), e => {}));
   ON.unsub.push(g.onConnection(c => { if(!ON) return; ON.connected = c; if(c) push(); renderOnline(); }, e => {}));
   ON.timer = setInterval(() => { if(ON) push(); }, 4000);
@@ -1149,16 +1233,30 @@ function packMe(){
   const m = ON.me;
   return { i:m.id, n:m.name, r:m.round, t:m.readyAt, c: m.creator ? 1 : 0, m: m.rules.mode==='salvo' ? 's' : 'c', w: m.rules.weapons ? 1 : 0,
     s: m.ships ? m.ships.map(s=>s.join('.')).join('|') : null,
-    f: m.acts.map(x => x.n+':'+x.kind[0]+':'+x.cell).join(',') };
+    f: m.acts.map(x => x.n+':'+x.kind[0]+':'+x.cell).join(','),
+    a: Date.now() };   // "alive" stamp: a page that is really open keeps changing it, a leftover message does not
+}
+// a fleet is valid only if it is exactly FLEET: straight ships inside the board that do not touch each other
+function fleetOk(ships){
+  if(!Array.isArray(ships) || ships.length!==FLEET.length) return false;
+  if(ships.map(s => s.length).sort((a,b) => b-a).join()!==FLEET.join()) return false;
+  const placed = [];
+  for(const s of ships){
+    const cs = shipCells(s[0], s.length, s.length===1 || s[1]-s[0]===1);
+    if(!cs || cs.join()!==s.join() || !canPlace(placed, cs)) return false;
+    placed.push(cs);
+  }
+  return true;
 }
 function unpack(p){
   if(!p || typeof p!=='object' || typeof p.i!=='string') return null;
-  const parseInts = s => s.split('.').map(Number).filter(n => Number.isInteger(n) && n>=0 && n<N*N);
-  const ships = (typeof p.s==='string' && p.s) ? p.s.split('|').map(parseInts) : null;
+  const parseInts = s => s.split('.').map(Number).filter(n => Number.isInteger(n) && n>=0 && n<N*N).sort((a,b) => a-b);
+  let ships = (typeof p.s==='string' && p.s) ? p.s.split('|').map(parseInts) : null;
+  if(ships && !fleetOk(ships)) ships = null;            // a broken or forged fleet counts as "not ready yet"
   const kinds = {s:'shot', b:'bomb', r:'radar'};
-  const acts = (typeof p.f==='string' && p.f) ? p.f.split(',').map(x => { const [n,k,c] = x.split(':'); return { n:Number(n), kind:kinds[k]||'shot', cell:Number(c) }; }).filter(x => Number.isInteger(x.n) && Number.isInteger(x.cell)) : [];
+  const acts = (typeof p.f==='string' && p.f) ? p.f.split(',').map(x => { const [n,k,c] = x.split(':'); return { n:Number(n), kind:kinds[k]||'shot', cell:Number(c) }; }).filter(x => Number.isInteger(x.n) && x.n>=0 && Number.isInteger(x.cell)) : [];
   return { id:p.i, name: String(p.n||'Суперник').slice(0,16), round: Number(p.r)||1, readyAt: Number(p.t)||0, creator: p.c===1,
-    rules: { mode: p.m==='s' ? 'salvo' : 'classic', weapons: p.w===1 }, ships, acts };
+    rules: { mode: p.m==='s' ? 'salvo' : 'classic', weapons: p.w===1 }, ships, acts, alive: Number(p.a)||0 };
 }
 function push(){
   if(!ON) return;
@@ -1189,27 +1287,58 @@ function replay(){
   if(!me.ships || !op || !op.ships) return null;
   const ids = [me.id, op.id].sort();
   const starterId = ids[hashStr(ids.join('|')+'#'+me.round) % 2];   // fair coin both devices agree on
-  const all = me.acts.map(x => ({...x, by:0})).concat(op.acts.map(x => ({...x, by:1}))).sort((a,b) => a.n-b.n);
-  const seq = []; for(const a of all){ if(a.n !== seq.length) break; seq.push(a); }
-  const rules = gameRules(op);
-  const D = derive([me.ships, op.ships], seq, rules, starterId===me.id ? 0 : 1);
-  D.rules = rules; D.op = op; D.count = D.valid; D.complete = D.valid === all.length;
+  const rules = gameRules(op), ships = [me.ships, op.ships], starter = starterId===me.id ? 0 : 1;
+  // take move number k only from the player whose turn it is: moves sent out of turn or twice under one number are ignored
+  const src = [new Map(), new Map()];
+  me.acts.forEach(x => { if(!src[0].has(x.n)) src[0].set(x.n, x); });
+  op.acts.forEach(x => { if(!src[1].has(x.n)) src[1].set(x.n, x); });
+  const seq = [];
+  let D = derive(ships, seq, rules, starter);
+  while(D.winner===null){
+    const a = src[D.turn].get(seq.length); if(!a) break;
+    seq.push({ n:a.n, kind:a.kind, cell:a.cell, by:D.turn });
+    const D2 = derive(ships, seq, rules, starter);
+    if(D2.valid < seq.length){ seq.pop(); break; }
+    D = D2;
+  }
+  const mineUsed = seq.filter(a => a.by===0).length;
+  D.rules = rules; D.op = op; D.count = seq.length; D.complete = mineUsed === me.acts.length;
   return D;
 }
 function onPeers(peers){
   if(!ON) return;
-  const liveIds = new Set(peers.filter(p => !p.sameTab && p.presence && p.presence.sb).map(p => p.presence.sb.i));
-  // another open page already plays as this id (two tabs on one device): the one that picked it up from storage steps aside
-  if(ON.adopted && liveIds.has(ON.me.id)){
-    const name = ON.me.name;
-    const next = ON.candidates.filter(x => !liveIds.has(x.id))[0];
-    ON.me = next ? Object.assign(next, {name}) : freshMe(name, 1, newId());
-    ON.adopted = !!next; ON.candidates = []; ON.screen = null;
-    setSessId(ON.me.id); push();
+  const live = peers.filter(p => !p.sameTab && p.presence && p.presence.sb);
+  const liveIds = new Set(live.map(p => p.presence.sb.i));
+  // another open page already plays as this id (two tabs on one device): the one that picked it up from storage steps aside.
+  // A leftover message from this same device before a restart never changes its "alive" stamp, so it is not a reason to step aside.
+  if(ON.adopted){
+    live.filter(p => p.presence.sb.i===ON.me.id).forEach(p => ON.dup.add(Number(p.presence.sb.a)||0));
+    if(ON.dup.size >= 2){
+      const name = ON.me.name;
+      const next = ON.candidates.filter(x => !liveIds.has(x.id))[0];
+      ON.me = next ? Object.assign(next, {name}) : freshMe(name, 1, newId());
+      ON.adopted = !!next; ON.candidates = []; ON.screen = null; ON.dup = new Set();
+      setSessId(ON.me.id); push();
+    }
   }
-  const others = peers.filter(p => !p.sameTab && p.presence && p.presence.sb).map(p => unpack(p.presence.sb)).filter(s => s && s.id !== ON.me.id);
-  const pick = others.find(s => ON.opp && s.id === ON.opp.id) || others[0] || null;
+  // one entry per player id: if a leftover message and a live page share an id, the freshest wins
+  const byId = {};
+  live.map(p => unpack(p.presence.sb)).filter(s => s && s.id !== ON.me.id).forEach(s => {
+    const b = byId[s.id];
+    if(!b || s.alive > b.alive || (s.alive===b.alive && s.acts.length > b.acts.length)) byId[s.id] = s;
+  });
+  const others = Object.values(byId);
+  // once a game has started, only its opponent counts: strangers who type the same code are ignored
+  const bound = ON.me.oppFleet && ON.me.oppFleet.id;
+  const pick = bound ? (byId[bound] || null) : (others.find(s => ON.opp && s.id === ON.opp.id) || others[0] || null);
   ON.oppHere = !!pick;
+  if(pick && pick.round===ON.me.round){
+    // the opponent's fleet is frozen from the first move: moving ships mid-game is ignored
+    const f = ON.me.oppFleet, started = ON.me.acts.length > 0 || pick.acts.length > 0;
+    if(f && f.id===pick.id && started) pick.ships = f.ships.map(s => s.slice());
+    else if(pick.ships && ON.me.ships){ ON.me.oppFleet = { id:pick.id, ships:pick.ships.map(s => s.slice()) }; }
+    else if(!started && f && f.id===pick.id && !pick.ships) ON.me.oppFleet = null;   // opponent is re-placing before the first shot
+  }
   if(pick){
     if(pick.round > ON.me.round){
       const R0 = replay();
@@ -1232,6 +1361,12 @@ function onPeers(peers){
       if(D.winner===null && D.turn===0) holdView('own', 1400, renderOnline);
     }
   }
+  // players republish every few seconds: redraw only when something visible changed, so taps are not lost mid-redraw
+  const op = sameRoundOpp();
+  const sig = JSON.stringify([ON.me.round, !!ON.me.ships, ON.oppHere, ON.opp && ON.opp.name, op && op.id, op && !!op.ships,
+    D && D.count, D && D.winner, D && D.complete, ON.rematch, ON.connected, gameRules(ON.opp)]);
+  if(sig === ON.sig) return;
+  ON.sig = sig;
   renderOnline();
 }
 function renderOnline(){
