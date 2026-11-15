@@ -733,6 +733,7 @@ function mqttRooms(){
         try{ const d = JSON.parse(txt); if(d && typeof d.p==='object'){ peers[peer] = { presence:d.p, seen:Date.now() }; firePeers(); } }catch(e){}
       });
       c.on('close', () => { if(live) fireConn(false); });
+      c.on('error', () => {});   // mqtt.js retries by itself; just keep errors out of the console
       c.on('offline', () => { if(live) fireConn(false); });
       // first broker unreachable: try the next one
       setTimeout(() => { if(live && client===c && !everConnected && BROKERS.length > 1){ try{ c.end(true); }catch(e){} brokerIdx++; connect(); } }, 9000);
@@ -1103,7 +1104,7 @@ function onlineLobby(err){
     <p class="muted" style="margin-top:12px">Один створює гру з правилами нижче й називає код, другий вводить цей код.</p>
     <div id="rp"></div>
     <div class="row"><button id="cr" class="go">Створити гру</button></div>
-    <label for="cd">або код гри</label><input id="cd" inputmode="numeric" maxlength="4" placeholder="1234" style="max-width:160px;text-align:center;letter-spacing:6px">
+    <label for="cd">або код гри</label><input id="cd" inputmode="numeric" maxlength="6" placeholder="123456" style="max-width:200px;text-align:center;letter-spacing:6px">
     <div class="row" style="margin-top:6px"><button id="jn">Приєднатися</button></div>
     <p class="flash miss" style="font-size:15px">${err||''}</p>
     <button class="alt" id="bk">← Назад</button></div>`);
@@ -1111,21 +1112,51 @@ function onlineLobby(err){
   app.appendChild(card);
   const name = () => (card.querySelector('#nm').value.trim() || 'Гравець').slice(0,16);
   card.querySelector('#bk').onclick = menu;
-  card.querySelector('#cr').onclick = () => { lsSet('sb-name', name()); onlineJoin(String(1000+Math.floor(Math.random()*9000)), name(), true); };
+  card.querySelector('#cr').onclick = () => { lsSet('sb-name', name()); onlineJoin(newCode(), name(), true); };
   card.querySelector('#jn').onclick = () => {
     const code = card.querySelector('#cd').value.replace(/\D/g,'');
-    if(code.length!==4){ onlineLobby('Код має бути з 4 цифр'); return; }
+    if(code.length!==6 && code.length!==4){ onlineLobby('Код має бути з 6 цифр'); return; }
     lsSet('sb-name', name()); onlineJoin(code, name(), false);
   };
 }
+// 6-digit codes: 900 000 rooms on a shared public server instead of 9 000
+function newCode(){ return String(100000 + Math.floor(Math.random()*900000)); }
+// wait a moment for the room's current players; true if someone else is already in it
+function roomBusy(g){
+  return new Promise(res => {
+    let seen = false, unsub = null, done = false;
+    const finish = () => { if(done) return; done = true; try{ unsub && unsub(); }catch(e){} res(seen); };
+    try{ unsub = g.onPeers(ch => { if(ch.peers.some(p => !p.sameTab && p.presence && p.presence.sb)) { seen = true; finish(); } }, () => {}); }catch(e){}
+    const t0 = Date.now();
+    const wait = setInterval(() => {   // give the connection up to 6 s, then 1.5 s more for the room's saved messages
+      const conn = (() => { try{ return g.connected(); }catch(e){ return true; } })();
+      if(done){ clearInterval(wait); return; }
+      if((conn && Date.now()-t0 > 1500) || Date.now()-t0 > 7500){ clearInterval(wait); setTimeout(finish, conn ? 1500 : 0); }
+    }, 250);
+  });
+}
+// saved online games: keep only the 5 most recent codes
+function pruneSaved(){
+  try{
+    const keys = []; for(let k=0;k<localStorage.length;k++){ const key = localStorage.key(k); if(key && key.startsWith('sb-on2-')) keys.push(key); }
+    const ts = key => { const v = lsGet(key) || {}; return Math.max(0, ...Object.values(v).map(x => (x && x.ts) || 0)); };
+    keys.sort((a,b) => ts(b)-ts(a)).slice(5).forEach(lsDel);
+  }catch(e){}
+}
 function freshMe(name, round, id, creator, rules){ return { id: id || tabId(), name, round: round||1, ships: null, readyAt: 0, acts: [], creator: !!creator, rules: rules || {...RULES} }; }
-async function onlineJoin(code, name, creator){
+async function onlineJoin(code, name, creator, tries){
   app.innerHTML = '<div class="cover"><div class="big">Підключаюсь…</div></div>';
   const room = await roomPromise;
   if(!room){ onlineLobby('Не вдалося підключитися'); return; }
   let g;
   try{ g = await room.join('seabattle-'+code); }
   catch(e){ onlineLobby(e && e.message==='no-lib' ? 'Немає інтернету — для гри на двох пристроях потрібне з\'єднання' : 'Не вдалося підключитися ('+(e&&e.code||'помилка')+')'); return; }
+  // a new game must start in an empty room: if someone is already there, pick another code
+  if(creator && !lsGet('sb-on2-'+code) && (tries||0) < 3 && await roomBusy(g)){
+    try{ await g.leave(); }catch(e){}
+    onlineJoin(newCode(), name, true, (tries||0)+1); return;
+  }
+  pruneSaved();
   // saved games for this code, one per player id: {id: me}
   const key = 'sb-on2-'+code;
   let saved = lsGet(key); if(!saved || typeof saved !== 'object') saved = {};
@@ -1138,7 +1169,7 @@ async function onlineJoin(code, name, creator){
   }
   if(!me) me = freshMe(name, 1, null, creator);
   me.name = name;
-  ON = { code, g, key, unsub:[], me, adopted, candidates, opp:null, connected: g.connected(), screen:null, flash:null, seen:0 };
+  ON = { code, g, key, unsub:[], me, adopted, candidates, opp:null, connected: g.connected(), screen:null, flash:null, seen:0, dup: new Set(), sig:null };
   ON.unsub.push(g.onPeers(ch => onPeers(ch.peers), e => {}));
   ON.unsub.push(g.onConnection(c => { if(!ON) return; ON.connected = c; if(c) push(); renderOnline(); }, e => {}));
   ON.timer = setInterval(() => { if(ON) push(); }, 4000);
@@ -1149,16 +1180,30 @@ function packMe(){
   const m = ON.me;
   return { i:m.id, n:m.name, r:m.round, t:m.readyAt, c: m.creator ? 1 : 0, m: m.rules.mode==='salvo' ? 's' : 'c', w: m.rules.weapons ? 1 : 0,
     s: m.ships ? m.ships.map(s=>s.join('.')).join('|') : null,
-    f: m.acts.map(x => x.n+':'+x.kind[0]+':'+x.cell).join(',') };
+    f: m.acts.map(x => x.n+':'+x.kind[0]+':'+x.cell).join(','),
+    a: Date.now() };   // "alive" stamp: a page that is really open keeps changing it, a leftover message does not
+}
+// a fleet is valid only if it is exactly FLEET: straight ships inside the board that do not touch each other
+function fleetOk(ships){
+  if(!Array.isArray(ships) || ships.length!==FLEET.length) return false;
+  if(ships.map(s => s.length).sort((a,b) => b-a).join()!==FLEET.join()) return false;
+  const placed = [];
+  for(const s of ships){
+    const cs = shipCells(s[0], s.length, s.length===1 || s[1]-s[0]===1);
+    if(!cs || cs.join()!==s.join() || !canPlace(placed, cs)) return false;
+    placed.push(cs);
+  }
+  return true;
 }
 function unpack(p){
   if(!p || typeof p!=='object' || typeof p.i!=='string') return null;
-  const parseInts = s => s.split('.').map(Number).filter(n => Number.isInteger(n) && n>=0 && n<N*N);
-  const ships = (typeof p.s==='string' && p.s) ? p.s.split('|').map(parseInts) : null;
+  const parseInts = s => s.split('.').map(Number).filter(n => Number.isInteger(n) && n>=0 && n<N*N).sort((a,b) => a-b);
+  let ships = (typeof p.s==='string' && p.s) ? p.s.split('|').map(parseInts) : null;
+  if(ships && !fleetOk(ships)) ships = null;            // a broken or forged fleet counts as "not ready yet"
   const kinds = {s:'shot', b:'bomb', r:'radar'};
-  const acts = (typeof p.f==='string' && p.f) ? p.f.split(',').map(x => { const [n,k,c] = x.split(':'); return { n:Number(n), kind:kinds[k]||'shot', cell:Number(c) }; }).filter(x => Number.isInteger(x.n) && Number.isInteger(x.cell)) : [];
+  const acts = (typeof p.f==='string' && p.f) ? p.f.split(',').map(x => { const [n,k,c] = x.split(':'); return { n:Number(n), kind:kinds[k]||'shot', cell:Number(c) }; }).filter(x => Number.isInteger(x.n) && x.n>=0 && Number.isInteger(x.cell)) : [];
   return { id:p.i, name: String(p.n||'Суперник').slice(0,16), round: Number(p.r)||1, readyAt: Number(p.t)||0, creator: p.c===1,
-    rules: { mode: p.m==='s' ? 'salvo' : 'classic', weapons: p.w===1 }, ships, acts };
+    rules: { mode: p.m==='s' ? 'salvo' : 'classic', weapons: p.w===1 }, ships, acts, alive: Number(p.a)||0 };
 }
 function push(){
   if(!ON) return;
@@ -1189,27 +1234,58 @@ function replay(){
   if(!me.ships || !op || !op.ships) return null;
   const ids = [me.id, op.id].sort();
   const starterId = ids[hashStr(ids.join('|')+'#'+me.round) % 2];   // fair coin both devices agree on
-  const all = me.acts.map(x => ({...x, by:0})).concat(op.acts.map(x => ({...x, by:1}))).sort((a,b) => a.n-b.n);
-  const seq = []; for(const a of all){ if(a.n !== seq.length) break; seq.push(a); }
-  const rules = gameRules(op);
-  const D = derive([me.ships, op.ships], seq, rules, starterId===me.id ? 0 : 1);
-  D.rules = rules; D.op = op; D.count = D.valid; D.complete = D.valid === all.length;
+  const rules = gameRules(op), ships = [me.ships, op.ships], starter = starterId===me.id ? 0 : 1;
+  // take move number k only from the player whose turn it is: moves sent out of turn or twice under one number are ignored
+  const src = [new Map(), new Map()];
+  me.acts.forEach(x => { if(!src[0].has(x.n)) src[0].set(x.n, x); });
+  op.acts.forEach(x => { if(!src[1].has(x.n)) src[1].set(x.n, x); });
+  const seq = [];
+  let D = derive(ships, seq, rules, starter);
+  while(D.winner===null){
+    const a = src[D.turn].get(seq.length); if(!a) break;
+    seq.push({ n:a.n, kind:a.kind, cell:a.cell, by:D.turn });
+    const D2 = derive(ships, seq, rules, starter);
+    if(D2.valid < seq.length){ seq.pop(); break; }
+    D = D2;
+  }
+  const mineUsed = seq.filter(a => a.by===0).length;
+  D.rules = rules; D.op = op; D.count = seq.length; D.complete = mineUsed === me.acts.length;
   return D;
 }
 function onPeers(peers){
   if(!ON) return;
-  const liveIds = new Set(peers.filter(p => !p.sameTab && p.presence && p.presence.sb).map(p => p.presence.sb.i));
-  // another open page already plays as this id (two tabs on one device): the one that picked it up from storage steps aside
-  if(ON.adopted && liveIds.has(ON.me.id)){
-    const name = ON.me.name;
-    const next = ON.candidates.filter(x => !liveIds.has(x.id))[0];
-    ON.me = next ? Object.assign(next, {name}) : freshMe(name, 1, newId());
-    ON.adopted = !!next; ON.candidates = []; ON.screen = null;
-    setSessId(ON.me.id); push();
+  const live = peers.filter(p => !p.sameTab && p.presence && p.presence.sb);
+  const liveIds = new Set(live.map(p => p.presence.sb.i));
+  // another open page already plays as this id (two tabs on one device): the one that picked it up from storage steps aside.
+  // A leftover message from this same device before a restart never changes its "alive" stamp, so it is not a reason to step aside.
+  if(ON.adopted){
+    live.filter(p => p.presence.sb.i===ON.me.id).forEach(p => ON.dup.add(Number(p.presence.sb.a)||0));
+    if(ON.dup.size >= 2){
+      const name = ON.me.name;
+      const next = ON.candidates.filter(x => !liveIds.has(x.id))[0];
+      ON.me = next ? Object.assign(next, {name}) : freshMe(name, 1, newId());
+      ON.adopted = !!next; ON.candidates = []; ON.screen = null; ON.dup = new Set();
+      setSessId(ON.me.id); push();
+    }
   }
-  const others = peers.filter(p => !p.sameTab && p.presence && p.presence.sb).map(p => unpack(p.presence.sb)).filter(s => s && s.id !== ON.me.id);
-  const pick = others.find(s => ON.opp && s.id === ON.opp.id) || others[0] || null;
+  // one entry per player id: if a leftover message and a live page share an id, the freshest wins
+  const byId = {};
+  live.map(p => unpack(p.presence.sb)).filter(s => s && s.id !== ON.me.id).forEach(s => {
+    const b = byId[s.id];
+    if(!b || s.alive > b.alive || (s.alive===b.alive && s.acts.length > b.acts.length)) byId[s.id] = s;
+  });
+  const others = Object.values(byId);
+  // once a game has started, only its opponent counts: strangers who type the same code are ignored
+  const bound = ON.me.oppFleet && ON.me.oppFleet.id;
+  const pick = bound ? (byId[bound] || null) : (others.find(s => ON.opp && s.id === ON.opp.id) || others[0] || null);
   ON.oppHere = !!pick;
+  if(pick && pick.round===ON.me.round){
+    // the opponent's fleet is frozen from the first move: moving ships mid-game is ignored
+    const f = ON.me.oppFleet, started = ON.me.acts.length > 0 || pick.acts.length > 0;
+    if(f && f.id===pick.id && started) pick.ships = f.ships.map(s => s.slice());
+    else if(pick.ships && ON.me.ships){ ON.me.oppFleet = { id:pick.id, ships:pick.ships.map(s => s.slice()) }; }
+    else if(!started && f && f.id===pick.id && !pick.ships) ON.me.oppFleet = null;   // opponent is re-placing before the first shot
+  }
   if(pick){
     if(pick.round > ON.me.round){
       const R0 = replay();
@@ -1232,6 +1308,12 @@ function onPeers(peers){
       if(D.winner===null && D.turn===0) holdView('own', 1400, renderOnline);
     }
   }
+  // players republish every few seconds: redraw only when something visible changed, so taps are not lost mid-redraw
+  const op = sameRoundOpp();
+  const sig = JSON.stringify([ON.me.round, !!ON.me.ships, ON.oppHere, ON.opp && ON.opp.name, op && op.id, op && !!op.ships,
+    D && D.count, D && D.winner, D && D.complete, ON.rematch, ON.connected, gameRules(ON.opp)]);
+  if(sig === ON.sig) return;
+  ON.sig = sig;
   renderOnline();
 }
 function renderOnline(){

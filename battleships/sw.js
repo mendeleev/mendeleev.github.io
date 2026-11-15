@@ -1,6 +1,6 @@
 // Service worker «Морський бій»: гра працює офлайн.
 // Під час кожного оновлення гри змінюй VERSION, щоб браузер підтягнув нові файли.
-const VERSION = "battleships-v3";
+const VERSION = "battleships-v4";
 const ASSETS = [
   "./",
   "index.html",
@@ -13,7 +13,8 @@ const ASSETS = [
   "icons/maskable-192.png",
   "icons/maskable-512.png",
   "icons/apple-touch-icon.png",
-  "icons/favicon-32.png"
+  "icons/favicon-32.png",
+  "vendor/mqtt.min.js"
 ];
 
 self.addEventListener("install", e => {
@@ -31,12 +32,28 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
-  // Сторінка: спершу мережа (щоб бачити свіжу версію), без мережі — з кешу.
+  // Сторінка: спершу мережа (щоб бачити свіжу версію), без мережі або за слабкого сигналу (3 с) — з кешу.
   if (req.mode === "navigate") {
-    e.respondWith(
-      fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put("index.html", copy)); return res; })
-        .catch(() => caches.match("index.html"))
-    );
+    const scope = new URL(self.registration.scope).pathname;
+    const path = new URL(req.url).pathname;
+    const isGame = path === scope || path === scope + "index.html";
+    e.respondWith((async () => {
+      const cached = await caches.match("index.html");
+      const net = fetch(req).then(res => {
+        // кешуємо лише справжню сторінку гри, щоб помилкова адреса (404) не перезаписала гру
+        if (res.ok && isGame) { const copy = res.clone(); caches.open(VERSION).then(c => c.put("index.html", copy)); }
+        return res;
+      });
+      net.catch(() => {});
+      if (!cached) return net;
+      const slow = new Promise(r => setTimeout(() => r(null), 3000));
+      try {
+        const res = await Promise.race([net, slow]);
+        return res || cached;
+      } catch (err) {
+        return cached;
+      }
+    })());
     return;
   }
   // Шрифти, іконки та інше: спершу кеш.
