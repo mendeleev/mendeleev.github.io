@@ -13,19 +13,21 @@
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
 :root{
-  --bg1:#0b3d63; --bg2:#0f5a8f; --sea2:#0f5a8f; --water:#d9eefb; --water-h:#bfe0f7; --line:#9cc7e6; --ship:#4a5868;
-  --hit:#e8533a; --hitbg:#ffd9d1; --sunk:#8f1d10; --miss:#6f8aa0; --ink:#0d2236; --card:#ffffff; --ok:#1f9d55; --accent:#f3b230;
+  --bg1:#0b3d63; --bg2:#0f5a8f; --sea2:#0f5a8f; --water:#d9eefb; --water-h:#bfe0f7; --line:#6fa6d2; --ship:#4a5868;
+  --hit:#d4371f; --hitbg:#d9eefb; --sunk:#5e1209; --miss:#2f5d86; --auto:#c3dbee; --autodot:#7d98b1; --ink:#0d2236; --card:#ffffff; --ok:#1f9d55; --accent:#f3b230;
   --hdr:#33516b; --scan:rgba(124,77,206,.16); --scanink:#6a3fb5; --topink:#fff;
 }
 /* "notebook" theme, like the paper printout: squared paper, pencil ships, pen marks */
 body.paper{
   --bg1:#efe9d8; --bg2:#e7dfc9; --water:#fdfdf8; --water-h:#eef3fb; --line:#a9c4e8; --ship:#5d6d8c;
-  --hit:#d23b2a; --hitbg:#fdfdf8; --sunk:#d23b2a; --miss:#2b4fa3; --hdr:#2b4fa3; --card:#fffef9; --topink:#2b3a55;
+  --hit:#d23b2a; --hitbg:#fdfdf8; --sunk:#d23b2a; --miss:#2b4fa3; --hdr:#2b4fa3; --card:#fffef9; --topink:#2b3a55; --auto:#f1f1ea; --autodot:#9aa9c8;
 }
 body.paper .board .c{border-color:var(--line)}
 body.paper .c.ship::before{background:repeating-linear-gradient(45deg,var(--ship) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 2px var(--ship)}
 body.paper .c.sunk::before{background:repeating-linear-gradient(45deg,rgba(210,59,42,.35) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 2px var(--hit)}
 body.paper .c.sunk::after,body.paper .c.hit::after{color:var(--hit);font-family:"Caveat","Comic Sans MS","Segoe Print",cursive}
+body.paper .c.hit:not(.ship)::before{display:none}
+body.paper .c.ship.hit::before{background:repeating-linear-gradient(45deg,var(--ship) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 2px var(--hit)}
 body.paper .board .h,body.paper .logo,body.paper h2{font-family:"Caveat","Comic Sans MS","Segoe Print",cursive}
 body.paper .board .h{font-size:clamp(15px,3.8vw,20px)}
 body.paper .logo{font-size:26px}
@@ -49,7 +51,8 @@ button{font:inherit;font-weight:600;border:0;border-radius:12px;padding:12px 18p
 button.alt{background:#e7eef5;color:var(--ink)}
 button.go{background:var(--ok)}
 button.warn{background:var(--accent);color:#2a1d00}
-button:disabled{opacity:.45;cursor:default}
+button:disabled{opacity:1;background:#d3dce5;color:#4f6072;cursor:default}
+.weapons button:disabled{opacity:.55;background:#e7eef5}
 input{font:inherit;font-size:18px;padding:11px 12px;border:2px solid #c9d8e5;border-radius:12px;width:100%;max-width:320px}
 label{display:block;font-weight:600;margin:10px 0 4px}
 .row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
@@ -76,20 +79,25 @@ label{display:block;font-weight:600;margin:10px 0 4px}
 .c.hv.eT::before{top:3px;border-radius:999px 999px 0 0}
 .c.hv.eB::before{bottom:3px;border-radius:0 0 999px 999px}
 .c.h1::before{border-radius:999px}
-.c.ship.hit::before{background:#d9907f}
-.c.sunk::before{background:var(--sunk)}
+.c.ship.hit::before{background:var(--hit)}
+/* sunk: dark hull with white stripes, so it differs from a live ship by pattern, not only by colour */
+.c.sunk::before{background:var(--sunk) repeating-linear-gradient(45deg,rgba(255,255,255,.28) 0 3px,transparent 3px 8px)}
+/* a hit on the enemy board: solid red disc with a white cross */
+.c.hit:not(.ship)::before{content:"";position:absolute;inset:12%;border-radius:50%;background:var(--hit);pointer-events:none}
 .c.gok::before{background:rgba(31,157,85,.55)}
 .c.gbad::before{background:rgba(232,83,58,.55)}
 .c.sel::before{box-shadow:0 0 0 3px var(--accent)}
 .c::after{position:relative;z-index:1}
-.c.miss::after,.c.auto::after{content:"";width:22%;height:22%;border-radius:50%;background:var(--miss)}
-.c.auto::after{opacity:.35}
+.c.miss::after,.c.auto::after{content:"";width:30%;height:30%;border-radius:50%;background:var(--miss)}
+.c.auto{background:var(--auto)}
+.c.auto::after{width:18%;height:18%;background:var(--autodot)}
 .c.hit{background:var(--hitbg)}
-.c.hit::after,.c.sunk::after{content:"✕";color:var(--hit);font-weight:900;font-size:clamp(14px,4vw,22px);line-height:1}
+.c.hit::after,.c.sunk::after{content:"✕";color:#fff;font-weight:900;font-size:clamp(13px,3.6vw,20px);line-height:1}
 .c.ship.hit{background:var(--water)}
 .c.sunk{background:var(--water)}
 .c.sunk::after{color:#fff}
 body.paper .c.sunk::after{color:var(--hit)}
+body.paper .c.auto{background:var(--water)}
 .c .badge{z-index:2}
 .c.scan{box-shadow:inset 0 0 0 100px var(--scan)}
 .c .badge{position:absolute;top:0;left:2px;font-size:clamp(9px,2.4vw,12px);font-weight:900;color:var(--scanink);line-height:1.1}
@@ -117,12 +125,57 @@ body.paper .c.sunk::after{color:var(--hit)}
 .battle .rank{font-size:14px;margin:0}
 .battle .row button{min-height:44px;padding:10px 16px}
 .wide-only{display:none}
-@media (min-width:820px){
+@media (min-width:740px){
   .wide-only{display:block}
   .battle .tabs{display:none}
   .battle .pane{display:flex!important}
   .battle .pane.own .board{width:min(34vw,330px)}
   .battle .pane.enemy .board{width:min(50vw,460px,calc(100vh - 250px))}
+}
+/* phone on its side: enemy board on the left at full height, status, your board and buttons on the right */
+@media (orientation:landscape) and (max-height:540px){
+  body{padding-top:calc(env(safe-area-inset-top) + 4px);padding-bottom:calc(env(safe-area-inset-bottom) + 4px)}
+  .top{position:fixed;top:calc(env(safe-area-inset-top) + 4px);right:calc(env(safe-area-inset-right) + 8px);margin:0;z-index:5;width:auto}
+  .top .logo{display:none}
+  .top button{min-height:34px;padding:4px 9px;background:rgba(11,61,99,.55)}
+  body.paper .top button{background:rgba(0,0,0,.08)}
+  #banner > div{margin:0 0 4px!important}
+  .card{margin-bottom:4px}
+  .card.battle{max-width:none;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"enemy head" "enemy own" "enemy more" "enemy btns";
+    column-gap:16px;row-gap:4px;align-items:start;padding:8px 12px}
+  .battle .tabs,.battle .wide-only{display:none!important}
+  .battle .boards{display:contents}
+  .battle .pane{display:flex!important}
+  .battle .pane.enemy{grid-area:enemy}
+  .battle .pane.own{grid-area:own}
+  .battle .head{grid-area:head;min-height:0;padding-right:96px}
+  .battle > .stats,.battle > .score{grid-area:more}
+  .battle > .row{grid-area:btns;margin-top:2px!important;justify-content:flex-start}
+  .battle .pane.enemy .board{width:min(56vw,calc(100svh - var(--lch,52px)));min-width:0}
+  .battle.armed .pane.enemy .board{--lch:108px}
+  body:has(#banner > div) .placing .board{width:calc(100svh - 110px)}
+  .battle .pane.own .board{width:min(40vw,calc(100svh - 200px));min-width:150px}
+  .battle .head{padding-right:84px}
+  body.paper .board .h{font-size:15px}
+  .battle .status{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .battle > .row button{min-height:38px;padding:6px 14px}
+  .battle .flash{font-size:17px;min-height:22px;margin:0}
+  .battle .win{font-size:26px}
+  .battle .tracker{margin:0 0 2px}
+  .weapons{margin-top:4px}
+  .weapons button{min-height:36px}
+  /* placement: board on the left, fleet, tips and buttons on the right */
+  .card.placing,.card.narrow.placing{max-width:none;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"board title" "board fleet" "board tips" "board err" "board btns";
+    column-gap:16px;align-items:start;align-content:start;padding:8px 12px;text-align:left}
+  .placing h2{grid-area:title;padding-right:96px}
+  .placing .fleet{grid-area:fleet;justify-content:flex-start}
+  .placing .ptips{grid-area:tips;flex-direction:column;align-items:flex-start;justify-content:flex-start}
+  .placing .err{grid-area:err}
+  .placing .boards{grid-area:board}
+  .placing .prow{grid-area:btns;justify-content:flex-start}
+  .placing .board{width:calc(100svh - 52px);min-width:0}
+  .cover{min-height:88svh}
+  .cover .big{margin:4px 0}
 }
 .weapons{display:flex;gap:6px;justify-content:center;margin:6px 0 0}
 .weapons button{margin:0;min-height:40px;padding:6px 10px;font-size:15px;background:#e7eef5;color:var(--ink)}
