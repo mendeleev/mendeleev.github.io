@@ -3,7 +3,7 @@
   "short_name": "Робо-Склад",
   "description": "Сокобан для дітей: допоможи роботу розставити коробки по місцях.",
   "lang": "uk",
-  "id": "./",
+  "id": "/robo-sklad/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
