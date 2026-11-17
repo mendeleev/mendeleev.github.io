@@ -3,7 +3,7 @@
   "short_name": "Морський бій",
   "description": "Морський бій на двох або проти комп'ютера: класика, залп, бомба й радар.",
   "lang": "uk",
-  "id": "./",
+  "id": "/battleships/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
