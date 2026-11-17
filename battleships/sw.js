@@ -1,13 +1,17 @@
 // Service worker «Морський бій»: гра працює офлайн.
-// Під час кожного оновлення гри змінюй VERSION, щоб браузер підтягнув нові файли.
-const VERSION = "battleships-v4";
+// VERSION підставляє збірка (build.mjs): хеш вмісту гри, тож кеш оновлюється сам.
+const VERSION = "battleships-0e539c4c48";
 const ASSETS = [
   "./",
   "index.html",
   "manifest.webmanifest",
   "fonts/fonts.css",
-  "fonts/caveat-cyrillic-700-normal.woff2",
-  "fonts/caveat-latin-700-normal.woff2",
+  "fonts/unbounded-cyrillic-700-normal.woff2",
+  "fonts/unbounded-latin-700-normal.woff2",
+  "fonts/manrope-cyrillic-wght-normal.woff2",
+  "fonts/manrope-latin-wght-normal.woff2",
+  "fonts/ibm-plex-mono-cyrillic-600-normal.woff2",
+  "fonts/ibm-plex-mono-latin-600-normal.woff2",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/maskable-192.png",
