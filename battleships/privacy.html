@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Морський бій — політика конфіденційності</title>
+<meta name="theme-color" content="#0b3d63">
+<link rel="icon" href="icons/favicon-32.png">
+<style>
+  :root{--bg:#f3ece0;--ink:#13233a;--muted:#55607a;--line:#d8cdb8;--link:#0b5d93}
+  @media (prefers-color-scheme:dark){:root{--bg:#0e1729;--ink:#e8e2d6;--muted:#a3adc2;--line:#2a3a58;--link:#8cc4f0}}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  main{max-width:680px;margin:0 auto;padding:28px 20px 48px}
+  h1{font-size:26px;margin:0 0 4px} h2{font-size:18px;margin:28px 0 6px}
+  p,li{margin:6px 0} ul{padding-left:22px}
+  .muted{color:var(--muted);font-size:14px}
+  a{color:var(--link)}
+  hr{border:0;border-top:1px solid var(--line);margin:40px 0 28px}
+</style>
+</head>
+<body>
+<main>
+<h1>Політика конфіденційності</h1>
+<p class="muted">Гра «Морський бій» · оновлено 19 листопада 2026 року</p>
+
+<p>«Морський бій» — гра без реклами, без реєстрації й без збору даних про гравців. Ми не маємо власного сервера і не бачимо, хто і як грає.</p>
+
+<h2>Що зберігається на твоєму пристрої</h2>
+<p>Гра пам'ятає на самому пристрої (у сховищі браузера) твоє ім'я в грі, налаштування, звання, рахунок партій і незакінчену гру. Ці дані нікуди не надсилаються. Щоб їх стерти, очисти дані сайту або застосунку чи видали застосунок.</p>
+
+<h2>Гра онлайн на двох пристроях</h2>
+<p>Лише коли ти сам вмикаєш гру онлайн, гра передає другому гравцеві через публічний сервер повідомлень (MQTT: broker.hivemq.com або broker.emqx.io) таке:</p>
+<ul>
+  <li>ім'я, яке ти вписав у грі (можна вигадати будь-яке);</li>
+  <li>код кімнати, правила партії, розстановку кораблів і постріли;</li>
+  <li>випадковий номер гравця, щоб відрізнити два пристрої.</li>
+</ul>
+<p>Ці повідомлення може прочитати будь-хто, хто знає код кімнати, тож не вписуй у ім'я справжнє прізвище чи інші особисті дані. Коли ти виходиш із гри, вона прибирає свої повідомлення з сервера. Сервери повідомлень належать HiveMQ та EMQX і працюють за їхніми правилами.</p>
+
+<h2>Чого гра не робить</h2>
+<ul>
+  <li>не просить дозволів на камеру, мікрофон, контакти чи місцезнаходження;</li>
+  <li>не показує рекламу й не має покупок;</li>
+  <li>не використовує аналітику, трекери чи файли cookie третіх сторін;</li>
+  <li>не передає й не продає дані нікому.</li>
+</ul>
+
+<h2>Діти</h2>
+<p>Гра підходить для дітей. Вона не збирає особистих даних, а єдине, що діти можуть передати, — ім'я в онлайн-грі, тож радимо дітям обирати вигадане ім'я.</p>
+
+<h2>Зв'язок</h2>
+<p>Питання про гру чи цю політику: <a href="https://github.com/mendeleev">github.com/mendeleev</a>.</p>
+
+<hr>
+
+<h1 lang="en">Privacy policy</h1>
+<div lang="en">
+<p class="muted">Battleships («Морський бій») · updated 19 November 2026</p>
+<p>Battleships has no ads, no accounts and collects no data about players. There is no server of our own, and we cannot see who plays or how.</p>
+<h2>Stored on your device</h2>
+<p>Your in-game name, settings, rank, scores and an unfinished game are kept only on your device (browser storage). They are never sent anywhere. Clear the site or app data, or uninstall the app, to erase them.</p>
+<h2>Online play on two devices</h2>
+<p>Only when you start an online game, the game sends the following to the other player through a public message server (MQTT: broker.hivemq.com or broker.emqx.io): the name you typed in the game, the room code, game rules, ship placement and shots, and a random player id. Anyone who knows the room code can read these messages, so please do not use your real full name. When you leave, the game removes its messages from the server. The message servers are run by HiveMQ and EMQX under their own terms.</p>
+<h2>What the game does not do</h2>
+<p>No camera, microphone, contacts or location permissions; no ads or purchases; no analytics, trackers or third-party cookies; no data is shared or sold.</p>
+<h2>Children</h2>
+<p>The game is suitable for children. It collects no personal data; the only thing a child can share is a name in online play, so we suggest using a made-up name.</p>
+<h2>Contact</h2>
+<p><a href="https://github.com/mendeleev">github.com/mendeleev</a></p>
+</div>
+</main>
+</body>
+</html>
