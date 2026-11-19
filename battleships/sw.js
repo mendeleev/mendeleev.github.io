@@ -1,6 +1,6 @@
 // Service worker «Морський бій»: гра працює офлайн.
 // VERSION підставляє збірка (build.mjs): хеш вмісту гри, тож кеш оновлюється сам.
-const VERSION = "battleships-250cbb716e";
+const VERSION = "battleships-fcc02fb74a";
 const ASSETS = [
   "./",
   "index.html",
